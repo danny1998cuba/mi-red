@@ -1,0 +1,103 @@
+CREATE TABLE clients (
+  id TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0),
+  full_name TEXT NOT NULL CHECK (length(trim(full_name)) > 0),
+  phone TEXT,
+  address TEXT,
+  monthly_fee_minor INTEGER NOT NULL CHECK (typeof(monthly_fee_minor) = 'integer' AND monthly_fee_minor >= 0),
+  status TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'archived')),
+  notes TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  archived_at INTEGER,
+  -- First eligible period of the latest active interval, not an audit instant.
+  billing_start_period TEXT NOT NULL CHECK (
+    billing_start_period GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]'
+    AND substr(billing_start_period, 1, 4) >= '0001'
+    AND substr(billing_start_period, 6, 2) BETWEEN '01' AND '12'
+  ),
+  CHECK ((status = 'archived') = (archived_at IS NOT NULL))
+) AS ClientRecord;
+
+CREATE INDEX clients_status ON clients(status);
+
+CREATE TABLE devices (
+  id TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0),
+  client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+  type TEXT NOT NULL CHECK (type IN ('antenna', 'ont', 'router', 'other')),
+  mac_address TEXT CHECK (mac_address IS NULL OR mac_address GLOB
+    '[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]'),
+  notes TEXT
+) AS DeviceRecord;
+
+CREATE INDEX devices_client ON devices(client_id);
+CREATE INDEX devices_mac ON devices(mac_address);
+
+CREATE TABLE charges (
+  id TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0),
+  client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+  period_key TEXT NOT NULL CHECK (
+    period_key GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]'
+    AND substr(period_key, 1, 4) >= '0001'
+    AND substr(period_key, 6, 2) BETWEEN '01' AND '12'
+  ),
+  collection_date TEXT NOT NULL CHECK (
+    collection_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+    AND date(collection_date, '+0 days') IS NOT NULL
+    AND date(collection_date, '+0 days') = collection_date
+  ),
+  suspension_candidate_date TEXT NOT NULL CHECK (suspension_candidate_date = period_key || '-03'),
+  amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor >= 0),
+  created_at INTEGER NOT NULL,
+  UNIQUE (client_id, period_key)
+) AS ChargeRecord;
+
+CREATE INDEX charges_period ON charges(period_key);
+CREATE INDEX charges_candidate_date ON charges(suspension_candidate_date);
+
+CREATE TABLE payments (
+  id TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0),
+  charge_id TEXT NOT NULL REFERENCES charges(id) ON DELETE RESTRICT,
+  amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor >= 0),
+  paid_at INTEGER NOT NULL,
+  note TEXT,
+  voided_at INTEGER
+) AS PaymentRecord;
+
+CREATE INDEX payments_charge ON payments(charge_id);
+CREATE UNIQUE INDEX payments_one_active ON payments(charge_id) WHERE voided_at IS NULL;
+
+-- Full payments are also enforced when bypassing the Dart services.
+CREATE TRIGGER payments_exact_amount BEFORE INSERT ON payments
+WHEN NEW.voided_at IS NULL
+  AND NOT EXISTS (SELECT 1 FROM charges WHERE id = NEW.charge_id AND amount_minor = NEW.amount_minor)
+BEGIN
+  SELECT RAISE(ABORT, 'El importe debe coincidir con un cargo existente.');
+END;
+
+-- Voiding is the only supported mutation of a historical payment.
+CREATE TRIGGER payments_immutable BEFORE UPDATE ON payments
+WHEN NEW.id IS NOT OLD.id OR NEW.charge_id IS NOT OLD.charge_id
+  OR NEW.amount_minor IS NOT OLD.amount_minor OR NEW.paid_at IS NOT OLD.paid_at
+  OR NEW.note IS NOT OLD.note OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL
+BEGIN
+  SELECT RAISE(ABORT, 'El pago histórico solo puede anularse una vez.');
+END;
+
+-- Preserve identity for all payment history and the amount of actively paid charges.
+CREATE TRIGGER charges_preserve_paid_history BEFORE UPDATE ON charges
+WHEN (EXISTS (SELECT 1 FROM payments WHERE charge_id = OLD.id)
+  AND (NEW.id IS NOT OLD.id OR NEW.client_id IS NOT OLD.client_id OR NEW.period_key IS NOT OLD.period_key))
+  OR (NEW.amount_minor IS NOT OLD.amount_minor
+    AND EXISTS (SELECT 1 FROM payments WHERE charge_id = OLD.id AND voided_at IS NULL))
+BEGIN
+  SELECT RAISE(ABORT, 'El cargo conserva su historial de pagos.');
+END;
+
+CREATE TABLE app_settings (
+  id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+  business_name TEXT NOT NULL DEFAULT 'Mi Red' CHECK (length(trim(business_name)) > 0),
+  currency_label TEXT NOT NULL DEFAULT '',
+  default_calling_code TEXT,
+  notifications_enabled BOOLEAN NOT NULL DEFAULT FALSE CHECK (notifications_enabled IN (0, 1)),
+  last_backup_at INTEGER
+) AS SettingsRecord;

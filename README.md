@@ -1,6 +1,6 @@
 # Mi Red
 
-App Flutter para Android y un único administrador de una red local. Esta entrega implementa **T01 — Bootstrap**: Inicio, Clientes, Cobros y Ajustes son pantallas provisionales, identificadas en la interfaz. Aún no guardan datos ni gestionan cobros.
+App Flutter para Android y un único administrador de una red local. Están implementadas **T01 — Bootstrap** y **T02 — Persistencia y motor de cobros**. Inicio, Clientes, Cobros y Ajustes conservan sus pantallas provisionales; la BD y los servicios de negocio se prueban sin interfaz funcional. Ver [guía de persistencia T02](T02_PERSISTENCE.md).
 
 ## Entorno
 
@@ -75,7 +75,7 @@ Riverpod administra el ciclo de vida de `GoRouter` mediante un provider manual y
 
 Dependencias directas añadidas: [`flutter_riverpod 3.4.3`](https://pub.dev/packages/flutter_riverpod/versions/3.4.3), [`go_router 18.1.1`](https://pub.dev/packages/go_router/versions/18.1.1) y `flutter_localizations` del SDK para los textos Material en español. Se elimina `cupertino_icons` por no utilizarse. Conservar `pubspec.lock` en control de versiones para reproducir la resolución.
 
-`core/database` y `core/services` se crearán cuando haya código que los necesite. Drift/SQLite y las integraciones de WhatsApp, compartir, notificaciones y documentos pertenecen a tareas posteriores. No hay servicios remotos.
+`core/database` contiene Drift/SQLite, conexión nativa, esquema y providers; los servicios concretos residen en las carpetas `data/` de cada feature. Las integraciones de WhatsApp, compartir, notificaciones y documentos pertenecen a tareas posteriores. No hay servicios remotos.
 
 ## Firma y custodia (T08)
 
@@ -91,7 +91,7 @@ Crear primero esa carpeta fuera del proyecto. Guardar la clave y sus contraseña
 
 Fuente de verdad: [producto](docs/PRODUCT_SPEC.md), [modelo](docs/DATA_MODEL.md), [plan](docs/IMPLEMENTATION_PLAN.md) y [normas](AGENTS.md).
 
-La siguiente iteración propuesta es **T02 — Persistencia y motor de fechas**: Drift/SQLite, integridad/transacciones y pruebas de días 30/3, febrero normal/bisiesto, duplicados, tarifas individuales, archivo e historial. No está implementada. Backup/restauración se probará al implementar T07.
+La siguiente iteración propuesta es **T03 — Clientes y dispositivos**: conectar los servicios existentes con formularios/listados y flujos validados. No está implementada. Backup/restauración se probará al implementar T07. La generación Drift, ubicación de la BD, migraciones, reglas y pruebas de T02 se documentan en [T02_PERSISTENCE.md](T02_PERSISTENCE.md).
 
 ## Resultado de validación T01 (27-10-2026)
 
@@ -105,3 +105,9 @@ La siguiente iteración propuesta es **T02 — Persistencia y motor de fechas**:
 - `flutter devices` / `flutter emulators`: no hay dispositivo Android conectado ni emulador disponible. La ejecución en Android y la prueba en modo avión quedan pendientes.
 - El SDK contiene Platform 36 y Build-Tools 36.0.0. Gradle instaló **NDK (Side by side) 28.2.13676358** durante la compilación usando una licencia ya aceptada en el equipo. En otro entorno se puede instalar desde SDK Manager; se conserva la versión requerida por Flutter.
 - `git status --short`: la carpeta recibida no contiene un repositorio Git (`not a git repository`); no se creó uno ni se hicieron commits.
+
+## Resultado de validación T02 (27-10-2026)
+
+Generación Drift y snapshot v1 correctos; `dart format .` correcto; `flutter analyze` sin incidencias; `flutter test`: **46 pruebas aprobadas**, conservando las 7 de T01. `flutter build apk --debug` generó el APK normal correctamente y se comprobó su arranque en el emulador API 35. Un diagnóstico independiente de SQLite en Android completó apertura/reapertura, versión, FK, integridad y ajustes (`MI_RED_SQLITE_SMOKE_OK`).
+
+El runner de integración Android no completó sus pruebas por desconexiones DDS/VM/ADB; se documentan resultados reales, comandos de diagnóstico y pendientes en [T02_PERSISTENCE.md](T02_PERSISTENCE.md). El repositorio Git ya existe en esta iteración. No se modificaron las pantallas, navegación, tests T01, permisos Android ni archivos de firma.
