@@ -11,7 +11,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'Android starts all placeholders and opens the private native database',
+    'Android starts all destinations and opens the private native database',
     (tester) async {
       app.main();
       await tester.pumpAndSettle();
@@ -37,10 +37,11 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           find.text('Pantalla provisional'),
-          label == 'Clientes' || label == 'Cobros'
-              ? findsNothing
-              : findsOneWidget,
+          label == 'Ajustes' ? findsOneWidget : findsNothing,
         );
+        if (label == 'Inicio') {
+          expect(find.byKey(const Key('dashboard-active')), findsOneWidget);
+        }
         expect(tester.takeException(), isNull);
       }
       await tester.pumpWidget(const SizedBox.shrink());

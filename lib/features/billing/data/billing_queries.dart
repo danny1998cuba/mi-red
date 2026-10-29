@@ -25,6 +25,25 @@ class BillingPeriodData {
   final String currencyLabel;
 }
 
+class ReviewClient {
+  const ReviewClient(this.id, this.fullName, this.oldestPeriodKey);
+  final String id, fullName, oldestPeriodKey;
+}
+
+class DashboardData {
+  const DashboardData({
+    required this.period,
+    required this.billing,
+    required this.totalClients,
+    required this.reviewCount,
+    required this.reviewClients,
+  });
+  final BillingPeriod period;
+  final BillingPeriodData billing;
+  final int totalClients, reviewCount;
+  final List<ReviewClient> reviewClients;
+}
+
 class ClientBillingData {
   const ClientBillingData(
     this.client,
@@ -58,6 +77,53 @@ class BillingQueries {
         readsFrom: {db.clients, db.charges, db.payments, db.appSettings},
       )
       .watch();
+
+  Stream<DashboardData> watchDashboard(LocalDate today) =>
+      _changes().asyncMap((_) => dashboardData(today));
+
+  Future<DashboardData> dashboardData(
+    LocalDate today,
+  ) => db.transaction(() async {
+    final period = currentPeriod(today);
+    final billing = await periodData(period, today);
+    final count = db.clients.id.count();
+    final clients = db.selectOnly(db.clients)..addColumns([count]);
+    // One row per active client, including older debt even if this period is paid.
+    // The window count precedes LIMIT, so the preview never hides the total.
+    final review = await db
+        .customSelect(
+          '''
+          WITH review AS (
+            SELECT cl.id, cl.full_name, MIN(c.period_key) AS oldest_period_key
+            FROM clients cl
+            JOIN charges c ON c.client_id = cl.id
+            LEFT JOIN payments p ON p.charge_id = c.id AND p.voided_at IS NULL
+            WHERE cl.status = 'active' AND p.id IS NULL
+              AND c.suspension_candidate_date <= ?
+            GROUP BY cl.id
+          )
+          SELECT *, COUNT(*) OVER () AS review_count FROM review
+          ORDER BY oldest_period_key, full_name COLLATE NOCASE, id
+          LIMIT 5
+        ''',
+          variables: [Variable.withString(today.toString())],
+        )
+        .get();
+    return DashboardData(
+      period: period,
+      billing: billing,
+      totalClients: (await clients.getSingle()).read(count) ?? 0,
+      reviewCount: review.isEmpty ? 0 : review.first.read<int>('review_count'),
+      reviewClients: [
+        for (final row in review)
+          ReviewClient(
+            row.read<String>('id'),
+            row.read<String>('full_name'),
+            row.read<String>('oldest_period_key'),
+          ),
+      ],
+    );
+  });
 
   Stream<BillingPeriodData> watchPeriod(
     BillingPeriod period,

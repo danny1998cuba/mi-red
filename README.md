@@ -1,6 +1,6 @@
 # Mi Red
 
-App Flutter para Android y un único administrador de una red local. Están implementadas T01–T04: persistencia, clientes/dispositivos y **Cobros, pagos e historial**. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Cobros permite consultar mensualidades, registrar pagos completos y anularlos conservando la auditoría. Inicio y Ajustes siguen siendo provisionales. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md) e [informe T04](docs/T04_BILLING_UI_REPORT.md).
+App Flutter para Android y un único administrador de una red local. Están implementadas T01–T05: persistencia, clientes/dispositivos, **Cobros, pagos e historial** e **Inicio operativo**. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Cobros permite consultar mensualidades, registrar pagos completos y anularlos conservando la auditoría. Inicio muestra el período vigente, cifras de cobros, acciones rápidas y clientes activos que requieren revisión por suspensión. Ajustes sigue provisional. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md), [informe T04](docs/T04_BILLING_UI_REPORT.md) e [informe T05](docs/T05_DASHBOARD_REPORT.md).
 
 **T03.3 — Sistema visual:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con los controles Material existentes. Navegación y tarjetas Forui, campos compactos, filtros contraíbles y copia explícita de IP. Tema según el sistema, sin bloquear el tamaño de texto. Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app. Ver [decisiones, pruebas y capturas reales](docs/T03_3_DESIGN_SYSTEM_REPORT.md).
 
@@ -42,6 +42,8 @@ Salida: `build/app/outputs/flutter-apk/app-debug.apk`, firmado con la clave debu
 
 Cobros también funciona offline. Elige el mes con las flechas o vuelve al período actual con el icono de calendario. El resumen corresponde al período completo; búsqueda y filtros afectan al listado. Toca un cargo para abrir el historial, o entra por «Cobros e historial» en la ficha de Cliente. «Registrar pago» confirma el importe histórico completo y permite nota opcional. «Anular pago» requiere confirmación y conserva el registro original. El estado del servicio se edita manualmente en Clientes: un cargo candidato a suspensión no corta el servicio. Pagar una mensualidad no liquida otras deudas anteriores.
 
+Inicio funciona offline y usa el período abierto por T02, que puede ser el mes siguiente desde el día 30 o el último día válido. «Clientes activos» cuenta el estado manual; «Pagados», «Pendientes» y «Por cobrar» corresponden solo al período mostrado y coinciden con Cobros, incluido historial archivado/suspendido. «Requieren revisión» cuenta clientes distintos actualmente activos con algún cargo candidato impagado, incluso antiguo; muestra los cinco con deuda más antigua y el total real. Abre su historial para revisarlos: no se suspende ni paga automáticamente. «Ver pendientes» abre el período actual de Cobros con Pendientes aplicado. «Actualizar Inicio» vuelve a conciliar mediante T02; también se actualiza al arrancar, reanudar y volver a Inicio.
+
 Para actualizar una instalación de pruebas conservando su BD y firma:
 
 ```powershell
@@ -57,7 +59,7 @@ No desinstalar ni borrar datos para aplicar una migración. Sustituir el ID por 
 ```powershell
 dart format .
 flutter analyze --no-pub
-flutter test --concurrency=1
+flutter test --concurrency=1 --reporter expanded
 ```
 
 Las pruebas cubren calendario y finanzas de T02, arranque, rutas, Clientes/dispositivos, filtros contraíbles, errores, formularios, temas claro/oscuro y pantallas de 320–400 dp con texto al 100/200 % y teclado simulado. T03.2 incorpora pruebas de migración real de un archivo v1 con datos e historial, reaperturas, integridad y validación/persistencia IPv4/IPv6. Los datos de prueba son sintéticos.
@@ -124,7 +126,7 @@ Crear primero esa carpeta fuera del proyecto. Guardar la clave y sus contraseña
 
 Fuente de verdad: [producto](docs/PRODUCT_SPEC.md), [modelo](docs/DATA_MODEL.md), [plan](docs/IMPLEMENTATION_PLAN.md) y [normas](AGENTS.md).
 
-T04 termina en cobros, pagos completos e historial con anulación. **No se inicia T05** sin nueva instrucción. Antes de aceptar el uso en producción quedan las tareas posteriores del plan y la validación en el teléfono objetivo. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
+T05 termina en Inicio operativo y sus accesos a las funciones existentes. **No se inicia T06** sin nueva instrucción. WhatsApp/reportes/recordatorios (T06), respaldo externo/restauración (T07) y QA final/firma de distribución (T08) siguen pendientes, junto con la validación en el teléfono objetivo. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
 
 ## Resultado de validación T01 (27-10-2026)
 
@@ -160,3 +162,7 @@ T03.1 sigue sin informe independiente ni cierre retrospectivo de su aceptación;
 ## Resultado de validación T04 (29-10-2026)
 
 **119 pruebas aprobadas** (95 anteriores + 24 nuevas); `dart format .` y `flutter analyze --no-pub` correctos. Builds Debug y Release correctos; `apksigner verify` aprueba Debug y rechaza Release sin firma. SQLite permanece en v2, sin migraciones ni dependencias nuevas. El [informe T04](docs/T04_BILLING_UI_REPORT.md) detalla el recorrido API 35, fixture sintética, capturas, auditoría y límites de aceptación. T05 no se inicia.
+
+## Resultado de validación T05 (29-10-2026)
+
+**145 pruebas aprobadas** (119 anteriores + 26 nuevas), formato y análisis limpios, builds Debug/Release correctos. Inicio reutiliza las cifras T04 y una cola de revisión transaccional de lectura. Actualización, pago y navegación offline comprobados con el APK normal en un **AVD API 35 dedicado**, con datos exclusivamente sintéticos; SQLite y el pago se conservan mediante `adb install -r`. El AVD poblado original queda intacto. [Arquitectura, comandos y cuatro capturas](docs/T05_DASHBOARD_REPORT.md). Release continúa sin firma de distribución; teléfono físico y DDS/DevFS siguen pendientes. No se implementa T06.

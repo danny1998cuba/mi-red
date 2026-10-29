@@ -59,7 +59,8 @@ void main() {
         );
         expect(navigation.children, hasLength(4));
         expect(navigation.index, 0);
-        expect(find.text('Pantalla provisional'), findsOneWidget);
+        expect(find.text('Pantalla provisional'), findsNothing);
+        expect(find.byKey(const Key('dashboard-active')), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

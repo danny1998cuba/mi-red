@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/billing/billing_screen.dart';
+import '../../features/billing/billing_values.dart';
 import '../../features/billing/client_billing_screen.dart';
 import '../../features/clients/clients_screen.dart';
 import '../../features/clients/client_detail_screen.dart';
@@ -66,7 +67,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/billing',
-            builder: (context, state) => const BillingScreen(),
+            builder: (context, state) => BillingScreen(
+              initialFilter: state.uri.queryParameters['filter'] == 'unpaid'
+                  ? BillingFilter.unpaid
+                  : BillingFilter.all,
+            ),
           ),
           GoRoute(
             path: '/settings',

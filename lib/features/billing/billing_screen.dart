@@ -14,7 +14,8 @@ import 'data/billing_queries.dart';
 import 'widgets/billing_widgets.dart';
 
 class BillingScreen extends ConsumerStatefulWidget {
-  const BillingScreen({super.key});
+  const BillingScreen({this.initialFilter = BillingFilter.all, super.key});
+  final BillingFilter initialFilter;
   @override
   ConsumerState<BillingScreen> createState() => _BillingScreenState();
 }
@@ -22,13 +23,14 @@ class BillingScreen extends ConsumerStatefulWidget {
 class _BillingScreenState extends ConsumerState<BillingScreen> {
   final _search = TextEditingController();
   BillingPeriod? _selected;
-  BillingFilter _filter = BillingFilter.all;
+  late BillingFilter _filter;
   bool _expanded = false;
   bool _prepared = false;
 
   @override
   void initState() {
     super.initState();
+    _filter = widget.initialFilter;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_prepare());
     });

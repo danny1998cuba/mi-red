@@ -41,7 +41,9 @@ void main() {
       find.descendant(of: find.byType(AppBar), matching: find.text('Inicio')),
       findsOneWidget,
     );
-    expect(find.text('Pantalla provisional'), findsOneWidget);
+    expect(find.text('Pantalla provisional'), findsNothing);
+    expect(find.byKey(const Key('dashboard-active')), findsOneWidget);
+    expect(find.text('Añade tu primer cliente'), findsOneWidget);
     final navigation = tester.widget<FBottomNavigationBar>(
       find.byType(FBottomNavigationBar),
     );
@@ -54,7 +56,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Navigates to every placeholder and returns to Inicio', (
+  testWidgets('Navigates to every destination and returns to Inicio', (
     tester,
   ) async {
     final container = testContainer();
@@ -80,10 +82,11 @@ void main() {
       expect(find.byType(destination.type), findsOneWidget);
       expect(
         find.text('Pantalla provisional'),
-        destination.type == ClientsScreen || destination.type == BillingScreen
-            ? findsNothing
-            : findsOneWidget,
+        destination.type == SettingsScreen ? findsOneWidget : findsNothing,
       );
+      if (destination.type == DashboardScreen) {
+        expect(find.byKey(const Key('dashboard-active')), findsOneWidget);
+      }
       expect(
         container
             .read(appRouterProvider)
@@ -189,10 +192,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text('Pantalla provisional'),
-        label == 'Clientes' || label == 'Cobros'
-            ? findsNothing
-            : findsOneWidget,
+        label == 'Ajustes' ? findsOneWidget : findsNothing,
       );
+      if (label == 'Inicio') {
+        expect(find.byKey(const Key('dashboard-active')), findsOneWidget);
+      }
       expect(tester.takeException(), isNull);
     }
   });
