@@ -26,7 +26,8 @@ CREATE TABLE devices (
   type TEXT NOT NULL CHECK (type IN ('antenna', 'ont', 'router', 'other')),
   mac_address TEXT CHECK (mac_address IS NULL OR mac_address GLOB
     '[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]'),
-  notes TEXT
+  notes TEXT,
+  ip_address TEXT
 ) AS DeviceRecord;
 
 CREATE INDEX devices_client ON devices(client_id);

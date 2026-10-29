@@ -55,42 +55,36 @@ void main() {
             ))
             .getSingle();
 
-    test(
-      'Schema v1 enables FKs and initializes exactly one safe settings row',
-      () async {
-        final initial = await settings.read();
-        expect(initial.id, 1);
-        expect(initial.businessName, 'Mi Red');
-        expect(initial.currencyLabel, isEmpty);
-        expect(initial.defaultCallingCode, isNull);
-        expect(initial.notificationsEnabled, isFalse);
-        expect(initial.lastBackupAt, isNull);
-        expect(
-          (await db.customSelect('PRAGMA foreign_keys').getSingle()).read<int>(
-            'foreign_keys',
-          ),
-          1,
-        );
-        expect(
-          (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
-            'user_version',
-          ),
-          1,
-        );
-        await expectLater(
-          db.customStatement('INSERT INTO app_settings(id) VALUES (2)'),
-          throwsA(isA<SqliteException>()),
-        );
-        await expectLater(
-          db.customStatement('INSERT INTO app_settings(id) VALUES (1)'),
-          throwsA(isA<SqliteException>()),
-        );
-        expect(
-          await db.customSelect('PRAGMA foreign_key_check').get(),
-          isEmpty,
-        );
-      },
-    );
+    test('Current schema enables FKs and initializes exactly one safe settings row', () async {
+      final initial = await settings.read();
+      expect(initial.id, 1);
+      expect(initial.businessName, 'Mi Red');
+      expect(initial.currencyLabel, isEmpty);
+      expect(initial.defaultCallingCode, isNull);
+      expect(initial.notificationsEnabled, isFalse);
+      expect(initial.lastBackupAt, isNull);
+      expect(
+        (await db.customSelect('PRAGMA foreign_keys').getSingle()).read<int>(
+          'foreign_keys',
+        ),
+        1,
+      );
+      expect(
+        (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
+          'user_version',
+        ),
+        2,
+      );
+      await expectLater(
+        db.customStatement('INSERT INTO app_settings(id) VALUES (2)'),
+        throwsA(isA<SqliteException>()),
+      );
+      await expectLater(
+        db.customStatement('INSERT INTO app_settings(id) VALUES (1)'),
+        throwsA(isA<SqliteException>()),
+      );
+      expect(await db.customSelect('PRAGMA foreign_key_check').get(), isEmpty);
+    });
 
     test('SQLite rejects negative fees, fractional money, invalid names and statuses', () async {
       final client = await create();

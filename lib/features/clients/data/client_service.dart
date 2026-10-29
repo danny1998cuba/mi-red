@@ -13,6 +13,48 @@ class ClientService {
   final AppDatabase db;
   final BillingService billing;
 
+  Stream<List<ClientRecord>> watchAll() => db.select(db.clients).watch();
+
+  Stream<ClientRecord?> watchById(String id) => (db.select(
+    db.clients,
+  )..where((row) => row.id.equals(id))).watchSingleOrNull();
+
+  /// Form edits do not reconcile just because the tariff changes.
+  /// Explicit service transitions retain the established T02 behavior.
+  Future<void> updateProfile(
+    String id, {
+    required String fullName,
+    required int monthlyFeeMinor,
+    required ServiceStatus status,
+    required LocalDate today,
+    String? phone,
+    String? address,
+    String? notes,
+    DateTime? recordedAt,
+  }) => db.transaction(() async {
+    final current = await get(id);
+    if (current.status == ServiceStatus.archived.name ||
+        status == ServiceStatus.archived) {
+      throw StateError('Reactiva el cliente antes de editarlo.');
+    }
+    if (fullName.trim().isEmpty || monthlyFeeMinor < 0) {
+      throw ArgumentError('Revisa el nombre y la mensualidad.');
+    }
+    if (current.status != status.name) {
+      await changeStatus(id, status, today: today, recordedAt: recordedAt);
+    }
+    await (db.update(db.clients)..where((row) => row.id.equals(id))).write(
+      ClientsCompanion(
+        fullName: Value(fullName.trim()),
+        monthlyFeeMinor: Value(monthlyFeeMinor),
+        phone: Value(phone),
+        address: Value(address),
+        notes: Value(notes),
+        updatedAt: Value((recordedAt ?? DateTime.now()).millisecondsSinceEpoch),
+      ),
+    );
+  });
+
   Future<ClientRecord> get(String id) async {
     final client = await (db.select(
       db.clients,

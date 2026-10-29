@@ -735,8 +735,26 @@ class Devices extends Table with TableInfo<Devices, DeviceRecord> {
     requiredDuringInsert: false,
     $customConstraints: '',
   );
+  static const VerificationMeta _ipAddressMeta = const VerificationMeta(
+    'ipAddress',
+  );
+  late final GeneratedColumn<String> ipAddress = GeneratedColumn<String>(
+    'ip_address',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, clientId, type, macAddress, notes];
+  List<GeneratedColumn> get $columns => [
+    id,
+    clientId,
+    type,
+    macAddress,
+    notes,
+    ipAddress,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -782,6 +800,12 @@ class Devices extends Table with TableInfo<Devices, DeviceRecord> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('ip_address')) {
+      context.handle(
+        _ipAddressMeta,
+        ipAddress.isAcceptableOrUnknown(data['ip_address']!, _ipAddressMeta),
+      );
+    }
     return context;
   }
 
@@ -811,6 +835,10 @@ class Devices extends Table with TableInfo<Devices, DeviceRecord> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      ipAddress: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ip_address'],
+      ),
     );
   }
 
@@ -829,12 +857,14 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
   final String type;
   final String? macAddress;
   final String? notes;
+  final String? ipAddress;
   const DeviceRecord({
     required this.id,
     required this.clientId,
     required this.type,
     this.macAddress,
     this.notes,
+    this.ipAddress,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -847,6 +877,9 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || ipAddress != null) {
+      map['ip_address'] = Variable<String>(ipAddress);
     }
     return map;
   }
@@ -862,6 +895,9 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      ipAddress: ipAddress == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ipAddress),
     );
   }
 
@@ -876,6 +912,7 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
       type: serializer.fromJson<String>(json['type']),
       macAddress: serializer.fromJson<String?>(json['mac_address']),
       notes: serializer.fromJson<String?>(json['notes']),
+      ipAddress: serializer.fromJson<String?>(json['ip_address']),
     );
   }
   @override
@@ -887,6 +924,7 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
       'type': serializer.toJson<String>(type),
       'mac_address': serializer.toJson<String?>(macAddress),
       'notes': serializer.toJson<String?>(notes),
+      'ip_address': serializer.toJson<String?>(ipAddress),
     };
   }
 
@@ -896,12 +934,14 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
     String? type,
     Value<String?> macAddress = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    Value<String?> ipAddress = const Value.absent(),
   }) => DeviceRecord(
     id: id ?? this.id,
     clientId: clientId ?? this.clientId,
     type: type ?? this.type,
     macAddress: macAddress.present ? macAddress.value : this.macAddress,
     notes: notes.present ? notes.value : this.notes,
+    ipAddress: ipAddress.present ? ipAddress.value : this.ipAddress,
   );
   DeviceRecord copyWithCompanion(DevicesCompanion data) {
     return DeviceRecord(
@@ -912,6 +952,7 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
           ? data.macAddress.value
           : this.macAddress,
       notes: data.notes.present ? data.notes.value : this.notes,
+      ipAddress: data.ipAddress.present ? data.ipAddress.value : this.ipAddress,
     );
   }
 
@@ -922,13 +963,15 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
           ..write('clientId: $clientId, ')
           ..write('type: $type, ')
           ..write('macAddress: $macAddress, ')
-          ..write('notes: $notes')
+          ..write('notes: $notes, ')
+          ..write('ipAddress: $ipAddress')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, clientId, type, macAddress, notes);
+  int get hashCode =>
+      Object.hash(id, clientId, type, macAddress, notes, ipAddress);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -937,7 +980,8 @@ class DeviceRecord extends DataClass implements Insertable<DeviceRecord> {
           other.clientId == this.clientId &&
           other.type == this.type &&
           other.macAddress == this.macAddress &&
-          other.notes == this.notes);
+          other.notes == this.notes &&
+          other.ipAddress == this.ipAddress);
 }
 
 class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
@@ -946,6 +990,7 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
   final Value<String> type;
   final Value<String?> macAddress;
   final Value<String?> notes;
+  final Value<String?> ipAddress;
   final Value<int> rowid;
   const DevicesCompanion({
     this.id = const Value.absent(),
@@ -953,6 +998,7 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
     this.type = const Value.absent(),
     this.macAddress = const Value.absent(),
     this.notes = const Value.absent(),
+    this.ipAddress = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DevicesCompanion.insert({
@@ -961,6 +1007,7 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
     required String type,
     this.macAddress = const Value.absent(),
     this.notes = const Value.absent(),
+    this.ipAddress = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        clientId = Value(clientId),
@@ -971,6 +1018,7 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
     Expression<String>? type,
     Expression<String>? macAddress,
     Expression<String>? notes,
+    Expression<String>? ipAddress,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -979,6 +1027,7 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
       if (type != null) 'type': type,
       if (macAddress != null) 'mac_address': macAddress,
       if (notes != null) 'notes': notes,
+      if (ipAddress != null) 'ip_address': ipAddress,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -989,6 +1038,7 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
     Value<String>? type,
     Value<String?>? macAddress,
     Value<String?>? notes,
+    Value<String?>? ipAddress,
     Value<int>? rowid,
   }) {
     return DevicesCompanion(
@@ -997,6 +1047,7 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
       type: type ?? this.type,
       macAddress: macAddress ?? this.macAddress,
       notes: notes ?? this.notes,
+      ipAddress: ipAddress ?? this.ipAddress,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1019,6 +1070,9 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (ipAddress.present) {
+      map['ip_address'] = Variable<String>(ipAddress.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1033,6 +1087,7 @@ class DevicesCompanion extends UpdateCompanion<DeviceRecord> {
           ..write('type: $type, ')
           ..write('macAddress: $macAddress, ')
           ..write('notes: $notes, ')
+          ..write('ipAddress: $ipAddress, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2987,6 +3042,7 @@ typedef $DevicesCreateCompanionBuilder = DevicesCompanion Function({
   required String type,
   Value<String?> macAddress,
   Value<String?> notes,
+  Value<String?> ipAddress,
   Value<int> rowid,
 });
 typedef $DevicesUpdateCompanionBuilder = DevicesCompanion Function({
@@ -2995,6 +3051,7 @@ typedef $DevicesUpdateCompanionBuilder = DevicesCompanion Function({
   Value<String> type,
   Value<String?> macAddress,
   Value<String?> notes,
+  Value<String?> ipAddress,
   Value<int> rowid,
 });
 
@@ -3045,6 +3102,11 @@ class $DevicesFilterComposer extends Composer<_$AppDatabase, Devices> {
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ipAddress => $composableBuilder(
+    column: $table.ipAddress,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3100,6 +3162,11 @@ class $DevicesOrderingComposer extends Composer<_$AppDatabase, Devices> {
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get ipAddress => $composableBuilder(
+    column: $table.ipAddress,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $ClientsOrderingComposer get clientId {
     final $ClientsOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3145,6 +3212,9 @@ class $DevicesAnnotationComposer extends Composer<_$AppDatabase, Devices> {
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get ipAddress =>
+      $composableBuilder(column: $table.ipAddress, builder: (column) => column);
 
   $ClientsAnnotationComposer get clientId {
     final $ClientsAnnotationComposer composer = $composerBuilder(
@@ -3203,6 +3273,7 @@ class $DevicesTableManager
                 Value<String> type = const Value.absent(),
                 Value<String?> macAddress = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> ipAddress = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DevicesCompanion(
                 id: id,
@@ -3210,6 +3281,7 @@ class $DevicesTableManager
                 type: type,
                 macAddress: macAddress,
                 notes: notes,
+                ipAddress: ipAddress,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3219,6 +3291,7 @@ class $DevicesTableManager
                 required String type,
                 Value<String?> macAddress = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> ipAddress = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DevicesCompanion.insert(
                 id: id,
@@ -3226,6 +3299,7 @@ class $DevicesTableManager
                 type: type,
                 macAddress: macAddress,
                 notes: notes,
+                ipAddress: ipAddress,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

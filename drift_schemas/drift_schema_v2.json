@@ -1,0 +1,787 @@
+{
+  "_meta": {
+    "description": "This file contains a serialized version of schema entities for drift.",
+    "version": "1.3.0"
+  },
+  "options": {
+    "store_date_time_values_as_text": false
+  },
+  "entities": [
+    {
+      "id": 0,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "clients",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "full_name",
+            "getter_name": "fullName",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (length(trim(full_name)) > 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "phone",
+            "getter_name": "phone",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "address",
+            "getter_name": "address",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "monthly_fee_minor",
+            "getter_name": "monthlyFeeMinor",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (typeof(monthly_fee_minor) = 'integer' AND monthly_fee_minor >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "status",
+            "getter_name": "status",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (status IN ('active', 'suspended', 'archived'))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "notes",
+            "getter_name": "notes",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at",
+            "getter_name": "updatedAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "archived_at",
+            "getter_name": "archivedAt",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "billing_start_period",
+            "getter_name": "billingStartPeriod",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (billing_start_period GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' AND substr(billing_start_period, 1, 4) >= '0001' AND substr(billing_start_period, 6, 2) BETWEEN '01' AND '12')",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "CHECK((status = 'archived')=(archived_at IS NOT NULL))"
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "references": [
+        0
+      ],
+      "type": "index",
+      "data": {
+        "on": 0,
+        "name": "clients_status",
+        "sql": "CREATE INDEX clients_status ON clients(status);",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 2,
+      "references": [
+        0
+      ],
+      "type": "table",
+      "data": {
+        "name": "devices",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "client_id",
+            "getter_name": "clientId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL REFERENCES clients(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "clients",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "type",
+            "getter_name": "type",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (type IN ('antenna', 'ont', 'router', 'other'))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "mac_address",
+            "getter_name": "macAddress",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "CHECK (mac_address IS NULL OR mac_address GLOB '[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]')",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "notes",
+            "getter_name": "notes",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "ip_address",
+            "getter_name": "ipAddress",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": []
+      }
+    },
+    {
+      "id": 3,
+      "references": [
+        2
+      ],
+      "type": "index",
+      "data": {
+        "on": 2,
+        "name": "devices_client",
+        "sql": "CREATE INDEX devices_client ON devices(client_id);",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 4,
+      "references": [
+        2
+      ],
+      "type": "index",
+      "data": {
+        "on": 2,
+        "name": "devices_mac",
+        "sql": "CREATE INDEX devices_mac ON devices(mac_address);",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 5,
+      "references": [
+        0
+      ],
+      "type": "table",
+      "data": {
+        "name": "charges",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "client_id",
+            "getter_name": "clientId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL REFERENCES clients(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "clients",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "period_key",
+            "getter_name": "periodKey",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (period_key GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' AND substr(period_key, 1, 4) >= '0001' AND substr(period_key, 6, 2) BETWEEN '01' AND '12')",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "collection_date",
+            "getter_name": "collectionDate",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (collection_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(collection_date, '+0 days') IS NOT NULL AND date(collection_date, '+0 days') = collection_date)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "suspension_candidate_date",
+            "getter_name": "suspensionCandidateDate",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (suspension_candidate_date = period_key || '-03')",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "amount_minor",
+            "getter_name": "amountMinor",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "UNIQUE(client_id, period_key)"
+        ],
+        "unique_keys": [
+          [
+            "client_id",
+            "period_key"
+          ]
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "references": [
+        5
+      ],
+      "type": "index",
+      "data": {
+        "on": 5,
+        "name": "charges_period",
+        "sql": "CREATE INDEX charges_period ON charges(period_key);",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 7,
+      "references": [
+        5
+      ],
+      "type": "index",
+      "data": {
+        "on": 5,
+        "name": "charges_candidate_date",
+        "sql": "CREATE INDEX charges_candidate_date ON charges(suspension_candidate_date);",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 8,
+      "references": [
+        5
+      ],
+      "type": "table",
+      "data": {
+        "name": "payments",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "charge_id",
+            "getter_name": "chargeId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL REFERENCES charges(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "charges",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "amount_minor",
+            "getter_name": "amountMinor",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "paid_at",
+            "getter_name": "paidAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "note",
+            "getter_name": "note",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "voided_at",
+            "getter_name": "voidedAt",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": []
+      }
+    },
+    {
+      "id": 9,
+      "references": [
+        8
+      ],
+      "type": "index",
+      "data": {
+        "on": 8,
+        "name": "payments_charge",
+        "sql": "CREATE INDEX payments_charge ON payments(charge_id);",
+        "unique": false,
+        "columns": []
+      }
+    },
+    {
+      "id": 10,
+      "references": [
+        8
+      ],
+      "type": "index",
+      "data": {
+        "on": 8,
+        "name": "payments_one_active",
+        "sql": "CREATE UNIQUE INDEX payments_one_active ON payments(charge_id) WHERE voided_at IS NULL;",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 11,
+      "references": [
+        8,
+        5
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 8,
+        "references_in_body": [
+          8,
+          5
+        ],
+        "name": "payments_exact_amount",
+        "sql": "CREATE TRIGGER payments_exact_amount BEFORE INSERT ON payments\nWHEN NEW.voided_at IS NULL\n  AND NOT EXISTS (SELECT 1 FROM charges WHERE id = NEW.charge_id AND amount_minor = NEW.amount_minor)\nBEGIN\n  SELECT RAISE(ABORT, 'El importe debe coincidir con un cargo existente.');\nEND;"
+      }
+    },
+    {
+      "id": 12,
+      "references": [
+        8
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 8,
+        "references_in_body": [
+          8
+        ],
+        "name": "payments_immutable",
+        "sql": "CREATE TRIGGER payments_immutable BEFORE UPDATE ON payments\nWHEN NEW.id IS NOT OLD.id OR NEW.charge_id IS NOT OLD.charge_id\n  OR NEW.amount_minor IS NOT OLD.amount_minor OR NEW.paid_at IS NOT OLD.paid_at\n  OR NEW.note IS NOT OLD.note OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL\nBEGIN\n  SELECT RAISE(ABORT, 'El pago histórico solo puede anularse una vez.');\nEND;"
+      }
+    },
+    {
+      "id": 13,
+      "references": [
+        5,
+        8
+      ],
+      "type": "trigger",
+      "data": {
+        "on": 5,
+        "references_in_body": [
+          5,
+          8
+        ],
+        "name": "charges_preserve_paid_history",
+        "sql": "CREATE TRIGGER charges_preserve_paid_history BEFORE UPDATE ON charges\nWHEN (EXISTS (SELECT 1 FROM payments WHERE charge_id = OLD.id)\n  AND (NEW.id IS NOT OLD.id OR NEW.client_id IS NOT OLD.client_id OR NEW.period_key IS NOT OLD.period_key))\n  OR (NEW.amount_minor IS NOT OLD.amount_minor\n    AND EXISTS (SELECT 1 FROM payments WHERE charge_id = OLD.id AND voided_at IS NULL))\nBEGIN\n  SELECT RAISE(ABORT, 'El cargo conserva su historial de pagos.');\nEND;"
+      }
+    },
+    {
+      "id": 14,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "app_settings",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY CHECK (id = 1)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "business_name",
+            "getter_name": "businessName",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL DEFAULT 'Mi Red' CHECK (length(trim(business_name)) > 0)",
+            "default_dart": "const CustomExpression('\\'Mi Red\\'')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "currency_label",
+            "getter_name": "currencyLabel",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL DEFAULT ''",
+            "default_dart": "const CustomExpression('\\'\\'')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "default_calling_code",
+            "getter_name": "defaultCallingCode",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "notifications_enabled",
+            "getter_name": "notificationsEnabled",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": "NOT NULL DEFAULT FALSE CHECK (notifications_enabled IN (0, 1))",
+            "default_dart": "const CustomExpression('FALSE')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "last_backup_at",
+            "getter_name": "lastBackupAt",
+            "moor_type": "int",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": []
+      }
+    }
+  ],
+  "fixed_sql": [
+    {
+      "name": "clients",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"clients\" (\"id\" TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0), \"full_name\" TEXT NOT NULL CHECK (length(trim(full_name)) > 0), \"phone\" TEXT, \"address\" TEXT, \"monthly_fee_minor\" INTEGER NOT NULL CHECK (typeof(monthly_fee_minor) = 'integer' AND monthly_fee_minor >= 0), \"status\" TEXT NOT NULL CHECK (status IN ('active', 'suspended', 'archived')), \"notes\" TEXT, \"created_at\" INTEGER NOT NULL, \"updated_at\" INTEGER NOT NULL, \"archived_at\" INTEGER, \"billing_start_period\" TEXT NOT NULL CHECK (billing_start_period GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' AND substr(billing_start_period, 1, 4) >= '0001' AND substr(billing_start_period, 6, 2) BETWEEN '01' AND '12'), CHECK((status = 'archived')=(archived_at IS NOT NULL)));"
+        }
+      ]
+    },
+    {
+      "name": "clients_status",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX clients_status ON clients (status)"
+        }
+      ]
+    },
+    {
+      "name": "devices",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"devices\" (\"id\" TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0), \"client_id\" TEXT NOT NULL REFERENCES clients(id)ON DELETE RESTRICT, \"type\" TEXT NOT NULL CHECK (type IN ('antenna', 'ont', 'router', 'other')), \"mac_address\" TEXT CHECK (mac_address IS NULL OR mac_address GLOB '[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]'), \"notes\" TEXT, \"ip_address\" TEXT);"
+        }
+      ]
+    },
+    {
+      "name": "devices_client",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX devices_client ON devices (client_id)"
+        }
+      ]
+    },
+    {
+      "name": "devices_mac",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX devices_mac ON devices (mac_address)"
+        }
+      ]
+    },
+    {
+      "name": "charges",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"charges\" (\"id\" TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0), \"client_id\" TEXT NOT NULL REFERENCES clients(id)ON DELETE RESTRICT, \"period_key\" TEXT NOT NULL CHECK (period_key GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' AND substr(period_key, 1, 4) >= '0001' AND substr(period_key, 6, 2) BETWEEN '01' AND '12'), \"collection_date\" TEXT NOT NULL CHECK (collection_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(collection_date, '+0 days') IS NOT NULL AND date(collection_date, '+0 days') = collection_date), \"suspension_candidate_date\" TEXT NOT NULL CHECK (suspension_candidate_date = period_key || '-03'), \"amount_minor\" INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor >= 0), \"created_at\" INTEGER NOT NULL, UNIQUE(client_id, period_key));"
+        }
+      ]
+    },
+    {
+      "name": "charges_period",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX charges_period ON charges (period_key)"
+        }
+      ]
+    },
+    {
+      "name": "charges_candidate_date",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX charges_candidate_date ON charges (suspension_candidate_date)"
+        }
+      ]
+    },
+    {
+      "name": "payments",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"payments\" (\"id\" TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0), \"charge_id\" TEXT NOT NULL REFERENCES charges(id)ON DELETE RESTRICT, \"amount_minor\" INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor >= 0), \"paid_at\" INTEGER NOT NULL, \"note\" TEXT, \"voided_at\" INTEGER);"
+        }
+      ]
+    },
+    {
+      "name": "payments_charge",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX payments_charge ON payments (charge_id)"
+        }
+      ]
+    },
+    {
+      "name": "payments_one_active",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE UNIQUE INDEX payments_one_active ON payments (charge_id) WHERE voided_at IS NULL"
+        }
+      ]
+    },
+    {
+      "name": "payments_exact_amount",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER payments_exact_amount BEFORE INSERT ON payments WHEN NEW.voided_at IS NULL AND NOT EXISTS (SELECT 1 FROM charges WHERE id = NEW.charge_id AND amount_minor = NEW.amount_minor) BEGIN SELECT RAISE (ABORT, 'El importe debe coincidir con un cargo existente.');END"
+        }
+      ]
+    },
+    {
+      "name": "payments_immutable",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER payments_immutable BEFORE UPDATE ON payments WHEN NEW.id IS NOT OLD.id OR NEW.charge_id IS NOT OLD.charge_id OR NEW.amount_minor IS NOT OLD.amount_minor OR NEW.paid_at IS NOT OLD.paid_at OR NEW.note IS NOT OLD.note OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL BEGIN SELECT RAISE (ABORT, 'El pago histórico solo puede anularse una vez.');END"
+        }
+      ]
+    },
+    {
+      "name": "charges_preserve_paid_history",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TRIGGER charges_preserve_paid_history BEFORE UPDATE ON charges WHEN(EXISTS (SELECT 1 FROM payments WHERE charge_id = OLD.id) AND(NEW.id IS NOT OLD.id OR NEW.client_id IS NOT OLD.client_id OR NEW.period_key IS NOT OLD.period_key))OR(NEW.amount_minor IS NOT OLD.amount_minor AND EXISTS (SELECT 1 FROM payments WHERE charge_id = OLD.id AND voided_at IS NULL))BEGIN SELECT RAISE (ABORT, 'El cargo conserva su historial de pagos.');END"
+        }
+      ]
+    },
+    {
+      "name": "app_settings",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"app_settings\" (\"id\" INTEGER NOT NULL PRIMARY KEY CHECK (id = 1), \"business_name\" TEXT NOT NULL DEFAULT 'Mi Red' CHECK (length(trim(business_name)) > 0), \"currency_label\" TEXT NOT NULL DEFAULT '', \"default_calling_code\" TEXT, \"notifications_enabled\" INTEGER NOT NULL DEFAULT FALSE CHECK (notifications_enabled IN (0, 1)), \"last_backup_at\" INTEGER);"
+        }
+      ]
+    }
+  ]
+}

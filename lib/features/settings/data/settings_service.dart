@@ -7,6 +7,8 @@ class SettingsService {
 
   final AppDatabase db;
 
+  Stream<SettingsRecord> watch() => db.select(db.appSettings).watchSingle();
+
   Future<SettingsRecord> read() => db.select(db.appSettings).getSingle();
 
   Future<void> update({

@@ -22,7 +22,7 @@ Future<void> main() async {
           .customSelect('PRAGMA integrity_check')
           .getSingle();
       if (settings.id != 1 ||
-          version.read<int>('user_version') != 1 ||
+          version.read<int>('user_version') != db.schemaVersion ||
           foreignKeys.read<int>('foreign_keys') != 1 ||
           violations.isNotEmpty ||
           integrity.read<String>('integrity_check') != 'ok') {

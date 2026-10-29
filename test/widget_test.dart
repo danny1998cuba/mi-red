@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mi_red/app.dart';
+import 'package:mi_red/core/database/app_database.dart';
+import 'package:mi_red/core/database/database_providers.dart';
 import 'package:mi_red/core/navigation/app_router.dart';
 import 'package:mi_red/features/billing/billing_screen.dart';
 import 'package:mi_red/features/clients/clients_screen.dart';
@@ -10,6 +13,18 @@ import 'package:mi_red/features/settings/settings_screen.dart';
 import 'package:mi_red/main.dart' as app;
 
 void main() {
+  ProviderContainer testContainer() {
+    final db = AppDatabase(NativeDatabase.memory());
+    final container = ProviderContainer(
+      overrides: [databaseProvider.overrideWithValue(db)],
+    );
+    addTearDown(() async {
+      container.dispose();
+      await db.close();
+    });
+    return container;
+  }
+
   testWidgets('Starts on the Spanish dashboard with four destinations', (
     tester,
   ) async {
@@ -32,8 +47,7 @@ void main() {
   testWidgets('Navigates to every placeholder and returns to Inicio', (
     tester,
   ) async {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+    final container = testContainer();
     await tester.pumpWidget(
       UncontrolledProviderScope(container: container, child: const MiRedApp()),
     );
@@ -54,7 +68,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(destination.type), findsOneWidget);
-      expect(find.text('Pantalla provisional'), findsOneWidget);
+      expect(
+        find.text('Pantalla provisional'),
+        destination.type == ClientsScreen ? findsNothing : findsOneWidget,
+      );
       expect(
         container
             .read(appRouterProvider)
@@ -135,7 +152,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    await tester.pumpWidget(const ProviderScope(child: MiRedApp()));
+    final container = testContainer();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(container: container, child: const MiRedApp()),
+    );
     await tester.pumpAndSettle();
 
     for (final label in ['Clientes', 'Cobros', 'Ajustes', 'Inicio']) {
@@ -146,7 +166,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Pantalla provisional'), findsOneWidget);
+      expect(
+        find.text('Pantalla provisional'),
+        label == 'Clientes' ? findsNothing : findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     }
   });

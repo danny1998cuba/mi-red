@@ -1,6 +1,6 @@
 # Mi Red
 
-App Flutter para Android y un único administrador de una red local. Están implementadas **T01 — Bootstrap** y **T02 — Persistencia y motor de cobros**. Inicio, Clientes, Cobros y Ajustes conservan sus pantallas provisionales; la BD y los servicios de negocio se prueban sin interfaz funcional. Ver [guía de persistencia T02](T02_PERSISTENCE.md).
+App Flutter para Android y un único administrador de una red local. Están implementadas T01, T02 y **T03 — Clientes y dispositivos**, con interfaz compacta T03.1 e **IP opcional por dispositivo T03.2**. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Inicio, Cobros y Ajustes siguen siendo provisionales; T04 no está implementada. Ver [persistencia T02](T02_PERSISTENCE.md) y [migración/IP T03.2](T03_2_IP_DEVICES.md).
 
 ## Entorno
 
@@ -36,7 +36,17 @@ Para obtener un APK de desarrollo, firmado automáticamente con la clave de depu
 flutter build apk --debug
 ```
 
-Salida: `build/app/outputs/flutter-apk/app-debug.apk`. Se necesita conexión para descargar SDK/dependencias durante la preparación; las cuatro pantallas de T01 funcionan sin internet. El manifiesto principal no solicita permisos. Los manifiestos debug/profile conservan INTERNET para las herramientas de desarrollo de Flutter.
+Salida: `build/app/outputs/flutter-apk/app-debug.apk`, firmado con la clave debug local. Funciona como APK independiente; no necesita `flutter run` ni DevFS para abrirse. Se necesita conexión para descargar SDK/dependencias durante la preparación; la gestión de Clientes y SQLite funcionan offline. El manifiesto principal no solicita permisos. Los manifiestos debug/profile conservan INTERNET para las herramientas de desarrollo de Flutter.
+
+Para actualizar una instalación de pruebas conservando su BD y firma:
+
+```powershell
+adb -s emulator-5554 install -r build/app/outputs/flutter-apk/app-debug.apk
+adb -s emulator-5554 shell am force-stop com.mired.offline
+adb -s emulator-5554 shell am start -W -n com.mired.offline/.MainActivity
+```
+
+No desinstalar ni borrar datos para aplicar una migración. Sustituir el ID por el dispositivo correspondiente. El fallo de arranque reportado en teléfono sigue sin diagnóstico: no hay teléfono físico conectado. Capturar `adb -s <id> logcat -d -b crash` y el resultado de `am start -W` para distinguir fallo de instalación, cierre del proceso y fallo de conexión del depurador.
 
 ## Verificación
 
@@ -46,9 +56,25 @@ flutter analyze
 flutter test
 ```
 
-Las pruebas cubren arranque real desde `main`, idioma español, las cuatro rutas y selección inferior, acceso directo a Cobros, recuperación de ruta inválida, temas del sistema claro/oscuro y una pantalla de 320 × 568 con texto al 200 %.
+Las pruebas cubren calendario y finanzas de T02, arranque, rutas, Clientes/dispositivos, filtros contraíbles, errores, formularios, temas claro/oscuro y pantallas de 320–400 dp con texto al 100/200 % y teclado simulado. T03.2 incorpora pruebas de migración real de un archivo v1 con datos e historial, reaperturas, integridad y validación/persistencia IPv4/IPv6. Los datos de prueba son sintéticos.
 
-Comprobación manual Android pendiente: arrancar, recorrer las cuatro pestañas, cambiar tema del sistema y repetir en modo avión. No se usan datos de clientes en las pruebas.
+La aceptación manual completa de T03.1 y el arranque en teléfono físico siguen pendientes. Los resultados actuales y el smoke de actualización Android se distinguen en el [informe T03.2](T03_2_IP_DEVICES.md).
+
+## SQLite v1 → v2 e IP
+
+La BD privada existente `mi_red.sqlite` se migra al abrirla: se añade únicamente `devices.ip_address TEXT NULL`, en transacción y comprobando claves foráneas. No se recrean tablas. Las IP antiguas quedan NULL; cargos, pagos, anulaciones, IDs, MAC y ajustes se conservan. Las nuevas instalaciones crean v2 directamente. El snapshot v1 se mantiene junto al nuevo v2.
+
+La IP es opcional: IPv4 o IPv6 numérica, sin hostname, puerto, CIDR, zona ni corchetes. Se normaliza localmente, sin DNS o conexiones; vaciar el campo borra la IP. La MAC sigue siendo opcional e independiente y conserva su advertencia de duplicados. Se permiten IP repetidas. En la ficha, mantener pulsada la IP para seleccionar/copiar con el menú del sistema. El resto de ediciones conserva el valor precargado.
+
+Regenerar solo después de cambiar el esquema:
+
+```powershell
+dart run build_runner build
+dart run drift_dev schema dump lib/core/database/app_database.dart drift_schemas/
+dart run drift_dev schema generate drift_schemas/ test/generated_migrations/
+```
+
+Versionar los dos snapshots y los helpers generados; nunca sustituir el v1 por el actual. T07 deberá incluir IP en exportación/restauración; todavía no existe backup externo.
 
 ## Estructura y decisiones
 
@@ -91,7 +117,7 @@ Crear primero esa carpeta fuera del proyecto. Guardar la clave y sus contraseña
 
 Fuente de verdad: [producto](docs/PRODUCT_SPEC.md), [modelo](docs/DATA_MODEL.md), [plan](docs/IMPLEMENTATION_PLAN.md) y [normas](AGENTS.md).
 
-La siguiente iteración propuesta es **T03 — Clientes y dispositivos**: conectar los servicios existentes con formularios/listados y flujos validados. No está implementada. Backup/restauración se probará al implementar T07. La generación Drift, ubicación de la BD, migraciones, reglas y pruebas de T02 se documentan en [T02_PERSISTENCE.md](T02_PERSISTENCE.md).
+T03.2 termina en la gestión de IP y su migración. **No se inicia T04** sin nueva instrucción. Antes de aceptar el uso en producción quedan la revisión manual y el diagnóstico en el teléfono objetivo. La guía [T02_PERSISTENCE.md](T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](T03_2_IP_DEVICES.md).
 
 ## Resultado de validación T01 (27-10-2026)
 
@@ -111,3 +137,9 @@ La siguiente iteración propuesta es **T03 — Clientes y dispositivos**: conect
 Generación Drift y snapshot v1 correctos; `dart format .` correcto; `flutter analyze` sin incidencias; `flutter test`: **46 pruebas aprobadas**, conservando las 7 de T01. `flutter build apk --debug` generó el APK normal correctamente y se comprobó su arranque en el emulador API 35. Un diagnóstico independiente de SQLite en Android completó apertura/reapertura, versión, FK, integridad y ajustes (`MI_RED_SQLITE_SMOKE_OK`).
 
 El runner de integración Android no completó sus pruebas por desconexiones DDS/VM/ADB; se documentan resultados reales, comandos de diagnóstico y pendientes en [T02_PERSISTENCE.md](T02_PERSISTENCE.md). El repositorio Git ya existe en esta iteración. No se modificaron las pantallas, navegación, tests T01, permisos Android ni archivos de firma.
+
+## Resultado de validación T03.2 (28-10-2026)
+
+Baseline T03.1 confirmado con 82 pruebas. T03.2: **90 pruebas aprobadas**, formato y análisis sin incidencias, APK debug normal compilado. Migración de archivo v1 con clientes, dispositivos, cargos, pago vigente/anulado y ajustes verificada tras tres reaperturas. Smoke API 35 aprobado sobre la BD v1 preexistente, actualizada con `adb install -r`: datos anteriores intactos, IP antiguas NULL e IP sintética persistente tras reinicio en frío. Véase el [informe con archivos y evidencia](T03_2_IP_DEVICES.md).
+
+`flutter build apk --release` compila, pero el APK resultante está **sin firma** y `apksigner verify` falla. Se mantiene la configuración recibida; no instalar/distribuir ese archivo como release válido. Hace falta configurar una clave autorizada fuera de Git para obtener un release instalable. El debug está firmado y no requiere DevFS; el fallo reportado en teléfono y la aceptación visual manual completa siguen pendientes.

@@ -40,7 +40,9 @@ class AppShell extends StatelessWidget {
       (destination) => destination.path == location,
     );
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi Red')),
+      appBar: AppBar(
+        title: Text(location == '/clients' ? 'Clientes' : 'Mi Red'),
+      ),
       body: SafeArea(child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
