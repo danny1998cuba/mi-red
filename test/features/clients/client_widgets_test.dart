@@ -2,6 +2,7 @@ import 'dart:async' show StreamController;
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mi_red/app.dart';
@@ -538,6 +539,95 @@ void main() {
     },
   );
 
+  for (final brightness in Brightness.values) {
+    testWidgets(
+      'Long IPv6 wraps and copies its complete value at 200 percent in $brightness',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        tester.platformDispatcher.platformBrightnessTestValue = brightness;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+        final client = await seed('copy-ip');
+        final device =
+            (await container
+                    .read(deviceServiceProvider)
+                    .save(
+                      clientId: client.id,
+                      type: DeviceType.router,
+                      macAddress: '02aabbccdd10',
+                    ))
+                .device;
+        // Use the existing SQL column to create a long, valid IPv6 display fixture;
+        // IP parsing/normalization itself remains covered by the service tests.
+        const value = '2001:db8:1234:5678:abcd:ef12:3456:789a';
+        await db.customStatement(
+          'UPDATE devices SET ip_address = ? WHERE id = ?',
+          [value, device.id],
+        );
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await open(tester, '/clients/${client.id}');
+        await pressClientControl(tester, 'copy-ip-${device.id}');
+        expect(copied, value);
+        expect(find.text('IP: $value'), findsOneWidget);
+        expect(find.text('02:AA:BB:CC:DD:10'), findsOneWidget);
+        expect(find.text('Dirección IP copiada.'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'Saving a long form scrolls to an invalid field instead of hiding its error',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await open(tester, '/clients/new');
+      await fillClientField(tester, 'client-fee', '30,50');
+      await fillClientField(
+        tester,
+        'client-notes',
+        'Borrador sintético sin nombre',
+      );
+      await pressClientControl(tester, 'client-save');
+      expect(find.text('El nombre es obligatorio.'), findsOneWidget);
+      final errorRect = tester.getRect(find.text('El nombre es obligatorio.'));
+      expect(errorRect.top, greaterThanOrEqualTo(0));
+      expect(errorRect.bottom, lessThanOrEqualTo(640));
+      expect(await container.read(clientServiceProvider).list(), isEmpty);
+      expect(
+        tester
+            .widget<TextFormField>(find.byKey(const Key('client-notes')))
+            .controller!
+            .text,
+        'Borrador sintético sin nombre',
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'Filters start collapsed and preserve selection with search and clearing',
     (tester) async {
@@ -628,6 +718,7 @@ void main() {
             await tester.ensureVisible(
               find.widgetWithText(ChoiceChip, 'Todos'),
             );
+            await tester.pump();
             await tester.tap(find.widgetWithText(ChoiceChip, 'Todos'));
             await settleClientData(tester);
             await pressClientControl(tester, 'client-filters');

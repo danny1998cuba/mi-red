@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:forui/forui.dart';
 
 import '../../core/widgets/feature_placeholder.dart';
 
@@ -12,7 +13,7 @@ class BillingScreen extends StatelessWidget {
       description:
           'Aquí consultarás mensualidades y pagos. '
           'Esta función aún no está disponible.',
-      icon: Icons.receipt_long_outlined,
+      icon: FLucideIcons.receiptText,
     );
   }
 }

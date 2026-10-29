@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:forui/forui.dart';
+
+import '../design_system/app_components.dart';
 
 class RouteErrorScreen extends StatelessWidget {
   const RouteErrorScreen({super.key});
@@ -7,7 +10,7 @@ class RouteErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi Red')),
+      appBar: AppPageHeader(context, 'Página no disponible'),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -15,7 +18,7 @@ class RouteErrorScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, size: 48),
+                const Icon(FLucideIcons.circleAlert, size: 24),
                 const SizedBox(height: 16),
                 Text(
                   'No se pudo abrir esta pantalla',

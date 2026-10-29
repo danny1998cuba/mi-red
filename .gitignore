@@ -53,3 +53,4 @@ app.*.map.json
 key.properties
 
 start-emulator.txt
+docs/screenshots/

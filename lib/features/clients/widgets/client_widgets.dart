@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:forui/forui.dart';
+
+import '../../../core/design_system/app_components.dart';
 
 import '../client_values.dart';
 
@@ -19,20 +22,12 @@ Future<bool> confirmClientAction(
 
   return await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          scrollable: true,
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => decide(context, false),
-              child: Text(cancelLabel),
-            ),
-            FilledButton(
-              onPressed: () => decide(context, true),
-              child: Text(confirmLabel),
-            ),
-          ],
+        builder: (context) => AppConfirmDialog(
+          title: title,
+          message: message,
+          confirmLabel: confirmLabel,
+          cancelLabel: cancelLabel,
+          onDecision: (value) => decide(context, value),
         ),
       ) ??
       false;
@@ -50,13 +45,18 @@ class ServiceStatusBadge extends StatelessWidget {
   const ServiceStatusBadge(this.status, {super.key});
   final String status;
   @override
-  Widget build(BuildContext context) => Chip(
-    avatar: Icon(switch (status) {
-      'active' => Icons.check_circle_outline,
-      'suspended' => Icons.pause_circle_outline,
-      _ => Icons.archive_outlined,
-    }, size: 18),
-    label: Text(serviceStatusLabel(status)),
+  Widget build(BuildContext context) => AppStatusBadge(
+    icon: switch (status) {
+      'active' => FLucideIcons.circleCheck,
+      'suspended' => FLucideIcons.circlePause,
+      _ => FLucideIcons.archive,
+    },
+    tone: switch (status) {
+      'active' => AppStatusTone.positive,
+      'suspended' => AppStatusTone.warning,
+      _ => AppStatusTone.neutral,
+    },
+    label: serviceStatusLabel(status),
   );
 }
 
@@ -73,33 +73,11 @@ class ClientNotice extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.people_outline, size: 28),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium,
-          textAlign: TextAlign.center,
-        ),
-        if (message != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(message!, textAlign: TextAlign.center),
-          ),
-        if (onAction != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: OutlinedButton(
-              onPressed: onAction,
-              child: Text(actionLabel ?? 'Reintentar'),
-            ),
-          ),
-      ],
-    ),
+  Widget build(BuildContext context) => AppEmptyState(
+    title: title,
+    message: message,
+    onAction: onAction,
+    actionLabel: actionLabel,
   );
 }
 
@@ -150,12 +128,13 @@ class _GuardedFormPageState extends State<GuardedFormPage> {
       if (!didPop) _leave();
     },
     child: Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
+      appBar: AppPageHeader(
+        context,
+        widget.title,
         leading: IconButton(
           tooltip: 'Volver',
           onPressed: widget.isSaving ? null : _leave,
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(FLucideIcons.arrowLeft),
         ),
       ),
       body: SafeArea(child: widget.child),

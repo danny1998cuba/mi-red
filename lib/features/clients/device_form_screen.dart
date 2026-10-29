@@ -1,6 +1,9 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:forui/forui.dart';
+
+import '../../core/design_system/app_components.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/database/database_providers.dart';
@@ -17,9 +20,12 @@ class DeviceFormScreen extends ConsumerWidget {
 
   Widget _notice(BuildContext context, String title, {VoidCallback? retry}) =>
       Scaffold(
-        appBar: AppBar(
-          title: const Text('Dispositivo'),
-          leading: BackButton(
+        appBar: AppPageHeader(
+          context,
+          'Dispositivo',
+          leading: IconButton(
+            tooltip: 'Atrás',
+            icon: const Icon(FLucideIcons.arrowLeft),
             onPressed: () => backToClients(
               context,
               '/clients/${Uri.encodeComponent(clientId)}',
@@ -111,7 +117,9 @@ class _DeviceEditorState extends ConsumerState<_DeviceEditor> {
   }
 
   Future<void> _save() async {
-    if (_saving || !_form.currentState!.validate()) return;
+    if (_saving) return;
+    final valid = await validateAppForm(_form);
+    if (!mounted || _saving || !valid) return;
     FocusScope.of(context).unfocus();
     setState(() {
       _saving = true;
@@ -189,112 +197,111 @@ class _DeviceEditorState extends ConsumerState<_DeviceEditor> {
     child: Form(
       key: _form,
       onChanged: () => setState(() {}),
-      child: ListView(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          DropdownButtonFormField<DeviceType>(
-            key: const Key('device-type'),
-            initialValue: _type,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Tipo de dispositivo',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              for (final type in DeviceType.values)
-                DropdownMenuItem(
-                  value: type,
-                  child: Text(deviceTypeLabel(type)),
-                ),
-            ],
-            onChanged: _saving
-                ? null
-                : (value) => setState(() => _type = value!),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            key: const Key('device-mac'),
-            controller: _mac,
-            enabled: !_saving,
-            autocorrect: false,
-            textInputAction: TextInputAction.next,
-            keyboardType: TextInputType.text,
-            enableSuggestions: false,
-            textCapitalization: TextCapitalization.characters,
-            validator: (value) {
-              try {
-                normalizeMacAddress(value);
-                return null;
-              } on ArgumentError {
-                return 'Introduce una MAC válida de 12 caracteres hexadecimales.';
-              }
-            },
-            decoration: const InputDecoration(
-              labelText: 'MAC (opcional)',
-              hintText: 'AA:BB:CC:DD:EE:FF',
-              helperText: 'Puedes usar dos puntos, guiones o escribirla sin separadores.',
-              helperMaxLines: 4,
-              errorMaxLines: 4,
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            key: const Key('device-ip'),
-            controller: _ip,
-            enabled: !_saving,
-            autocorrect: false,
-            enableSuggestions: false,
-            keyboardType: TextInputType.text,
-            textInputAction: TextInputAction.next,
-            validator: (value) {
-              try {
-                normalizeIpAddress(value);
-                return null;
-              } on ArgumentError {
-                return 'Introduce una dirección IPv4 o IPv6 válida, sin puerto ni prefijo de red.';
-              }
-            },
-            decoration: const InputDecoration(
-              labelText: 'Dirección IP (opcional)',
-              helperText: 'Ej.: 192.168.1.20 o fe80::1',
-              helperMaxLines: 3,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            key: const Key('device-notes'),
-            controller: _notes,
-            enabled: !_saving,
-            minLines: 2,
-            maxLines: 6,
-            textInputAction: TextInputAction.done,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Notas (opcional)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Semantics(liveRegion: true, child: Text(_error!)),
-            ),
-          const SizedBox(height: 12),
-          FilledButton(
-            key: const Key('device-save'),
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: CircularProgressIndicator(),
-                  )
-                : const Text(
-                    'Guardar dispositivo',
-                    textAlign: TextAlign.center,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            DropdownButtonFormField<DeviceType>(
+              key: const Key('device-type'),
+              initialValue: _type,
+              isExpanded: true,
+              icon: const Icon(FLucideIcons.chevronDown, size: 18),
+              decoration: const InputDecoration(
+                labelText: 'Tipo de dispositivo',
+              ),
+              items: [
+                for (final type in DeviceType.values)
+                  DropdownMenuItem(
+                    value: type,
+                    child: Text(deviceTypeLabel(type)),
                   ),
-          ),
-        ],
+              ],
+              onChanged: _saving
+                  ? null
+                  : (value) => setState(() => _type = value!),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              key: const Key('device-mac'),
+              controller: _mac,
+              enabled: !_saving,
+              autocorrect: false,
+              textInputAction: TextInputAction.next,
+              keyboardType: TextInputType.text,
+              enableSuggestions: false,
+              textCapitalization: TextCapitalization.characters,
+              validator: (value) {
+                try {
+                  normalizeMacAddress(value);
+                  return null;
+                } on ArgumentError {
+                  return 'Introduce una MAC válida de 12 caracteres hexadecimales.';
+                }
+              },
+              decoration: const InputDecoration(
+                labelText: 'MAC (opcional)',
+                hintText: 'AA:BB:CC:DD:EE:FF',
+                helperText: 'Puedes usar dos puntos, guiones o escribirla sin separadores.',
+                helperMaxLines: 4,
+                errorMaxLines: 4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              key: const Key('device-ip'),
+              controller: _ip,
+              enabled: !_saving,
+              autocorrect: false,
+              enableSuggestions: false,
+              keyboardType: TextInputType.text,
+              textInputAction: TextInputAction.next,
+              validator: (value) {
+                try {
+                  normalizeIpAddress(value);
+                  return null;
+                } on ArgumentError {
+                  return 'Introduce una dirección IPv4 o IPv6 válida, sin puerto ni prefijo de red.';
+                }
+              },
+              decoration: const InputDecoration(
+                labelText: 'Dirección IP (opcional)',
+                helperText: 'Ej.: 192.168.1.20 o fe80::1',
+                helperMaxLines: 3,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              key: const Key('device-notes'),
+              controller: _notes,
+              enabled: !_saving,
+              minLines: 2,
+              maxLines: 6,
+              textInputAction: TextInputAction.done,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(labelText: 'Notas (opcional)'),
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Semantics(liveRegion: true, child: Text(_error!)),
+              ),
+            const SizedBox(height: 12),
+            FilledButton(
+              key: const Key('device-save'),
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: CircularProgressIndicator(),
+                    )
+                  : const Text(
+                      'Guardar dispositivo',
+                      textAlign: TextAlign.center,
+                    ),
+            ),
+          ],
+        ),
       ),
     ),
   );

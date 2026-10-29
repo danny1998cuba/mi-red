@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,11 +33,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(DashboardScreen), findsOneWidget);
-    expect(find.text('Mi Red'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Inicio')),
+      findsOneWidget,
+    );
     expect(find.text('Pantalla provisional'), findsOneWidget);
-    final navigation = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(navigation.destinations, hasLength(4));
-    expect(navigation.selectedIndex, 0);
+    final navigation = tester.widget<FBottomNavigationBar>(
+      find.byType(FBottomNavigationBar),
+    );
+    expect(navigation.children, hasLength(4));
+    expect(navigation.index, 0);
     expect(
       Localizations.localeOf(tester.element(find.byType(DashboardScreen))),
       const Locale('es'),
@@ -62,7 +68,7 @@ void main() {
     for (final destination in destinations) {
       await tester.tap(
         find.descendant(
-          of: find.byType(NavigationBar),
+          of: find.byType(FBottomNavigationBar),
           matching: find.text(destination.label),
         ),
       );
@@ -82,7 +88,9 @@ void main() {
         destination.path,
       );
       expect(
-        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        tester
+            .widget<FBottomNavigationBar>(find.byType(FBottomNavigationBar))
+            .index,
         destination.index,
       );
       expect(tester.takeException(), isNull);
@@ -102,7 +110,9 @@ void main() {
 
     expect(find.byType(BillingScreen), findsOneWidget);
     expect(
-      tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+      tester
+          .widget<FBottomNavigationBar>(find.byType(FBottomNavigationBar))
+          .index,
       2,
     );
     expect(tester.takeException(), isNull);
@@ -161,7 +171,7 @@ void main() {
     for (final label in ['Clientes', 'Cobros', 'Ajustes', 'Inicio']) {
       await tester.tap(
         find.descendant(
-          of: find.byType(NavigationBar),
+          of: find.byType(FBottomNavigationBar),
           matching: find.text(label),
         ),
       );

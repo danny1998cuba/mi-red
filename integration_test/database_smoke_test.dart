@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -29,7 +30,7 @@ void main() {
       for (final label in ['Clientes', 'Cobros', 'Ajustes', 'Inicio']) {
         await tester.tap(
           find.descendant(
-            of: find.byType(NavigationBar),
+            of: find.byType(FBottomNavigationBar),
             matching: find.text(label),
           ),
         );

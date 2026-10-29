@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:forui/forui.dart';
+
+import '../../core/design_system/app_components.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/database/database_providers.dart';
@@ -111,9 +114,14 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Ficha de cliente'),
-      leading: BackButton(onPressed: () => backToClients(context)),
+    appBar: AppPageHeader(
+      context,
+      'Ficha de cliente',
+      leading: IconButton(
+        tooltip: 'Atrás',
+        icon: const Icon(FLucideIcons.arrowLeft),
+        onPressed: () => backToClients(context),
+      ),
     ),
     body: SafeArea(
       child: SingleChildScrollView(
@@ -145,7 +153,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Card.filled(
+        FCard(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -155,10 +163,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                   client.fullName,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
+                const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: ServiceStatusBadge(client.status),
                 ),
+                const SizedBox(height: 12),
                 Text(
                   '${formatMoneyMinor(client.monthlyFeeMinor, currencyLabel: currency)} al mes',
                   style: Theme.of(context).textTheme.titleLarge,
@@ -183,14 +193,14 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
               OutlinedButton.icon(
                 key: const Key('edit-client'),
                 onPressed: _busy ? null : () => context.push('$_location/edit'),
-                icon: const Icon(Icons.edit_outlined),
+                icon: const Icon(FLucideIcons.pencil),
                 label: const Text('Editar cliente'),
               ),
             OutlinedButton.icon(
               key: const Key('archive-client'),
               onPressed: _busy ? null : () => _changeStatus(client),
               icon: Icon(
-                archived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                archived ? FLucideIcons.archiveRestore : FLucideIcons.archive,
               ),
               label: Text(archived ? 'Reactivar cliente' : 'Archivar cliente'),
             ),
@@ -222,7 +232,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
               ),
             ),
         const SizedBox(height: 16),
-        Text('Dispositivos', style: Theme.of(context).textTheme.titleLarge),
+        const AppSection('Dispositivos'),
         const SizedBox(height: 12),
         if (!archived)
           Align(
@@ -249,69 +259,82 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                   : Column(
                       children: [
                         for (final device in devices)
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(
-                                    deviceTypeLabel(
-                                      DeviceType.values.byName(device.type),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: FCard(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      deviceTypeLabel(
+                                        DeviceType.values.byName(device.type),
+                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
                                     ),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium,
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                    child: SelectableText(
-                                      device.macAddress ?? 'Sin MAC registrada',
-                                    ),
-                                  ),
-                                  if (device.ipAddress != null)
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
                                       child: SelectableText(
-                                        'IP: ${device.ipAddress}',
+                                        device.macAddress ??
+                                            'Sin MAC registrada',
                                       ),
                                     ),
-                                  if (device.notes?.isNotEmpty ?? false)
-                                    Text(device.notes!),
-                                  if (!archived)
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 4,
-                                      children: [
-                                        TextButton.icon(
-                                          key: ValueKey(
-                                            'edit-device-${device.id}',
-                                          ),
-                                          onPressed: _busy
-                                              ? null
-                                              : () => context.push(
-                                                  '$_location/devices/${Uri.encodeComponent(device.id)}/edit',
-                                                ),
-                                          icon: const Icon(Icons.edit_outlined),
-                                          label: const Text('Editar'),
+                                    if (device.ipAddress != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8,
                                         ),
-                                        TextButton.icon(
-                                          key: ValueKey(
-                                            'delete-device-${device.id}',
+                                        child: AppCopyableValue(
+                                          value: device.ipAddress!,
+                                          label: 'dirección IP',
+                                          copyKey: ValueKey(
+                                            'copy-ip-${device.id}',
                                           ),
-                                          onPressed: _busy
-                                              ? null
-                                              : () => _removeDevice(device),
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                          ),
-                                          label: const Text('Eliminar'),
                                         ),
-                                      ],
-                                    ),
-                                ],
+                                      ),
+                                    if (device.notes?.isNotEmpty ?? false)
+                                      Text(device.notes!),
+                                    if (!archived)
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        children: [
+                                          TextButton.icon(
+                                            key: ValueKey(
+                                              'edit-device-${device.id}',
+                                            ),
+                                            onPressed: _busy
+                                                ? null
+                                                : () => context.push(
+                                                    '$_location/devices/${Uri.encodeComponent(device.id)}/edit',
+                                                  ),
+                                            icon: const Icon(
+                                              FLucideIcons.pencil,
+                                            ),
+                                            label: const Text('Editar'),
+                                          ),
+                                          TextButton.icon(
+                                            key: ValueKey(
+                                              'delete-device-${device.id}',
+                                            ),
+                                            onPressed: _busy
+                                                ? null
+                                                : () => _removeDevice(device),
+                                            icon: const Icon(
+                                              FLucideIcons.trash2,
+                                            ),
+                                            label: const Text('Eliminar'),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:forui/forui.dart';
 
 import '../../core/widgets/feature_placeholder.dart';
 
@@ -12,7 +13,7 @@ class DashboardScreen extends StatelessWidget {
       description:
           'Aquí verás el resumen de clientes y cobros. '
           'Esta función aún no está disponible.',
-      icon: Icons.home_outlined,
+      icon: FLucideIcons.house,
     );
   }
 }

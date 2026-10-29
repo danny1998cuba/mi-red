@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:forui/forui.dart';
+
+import '../../core/design_system/app_components.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/database/database_providers.dart';
@@ -21,11 +24,11 @@ class ClientFormScreen extends ConsumerWidget {
         .watch(clientProvider(clientId!))
         .when(
           loading: () => Scaffold(
-            appBar: AppBar(title: const Text('Editar cliente')),
+            appBar: AppPageHeader(context, 'Editar cliente'),
             body: const Center(child: CircularProgressIndicator()),
           ),
           error: (error, stack) => Scaffold(
-            appBar: AppBar(title: const Text('Editar cliente')),
+            appBar: AppPageHeader(context, 'Editar cliente'),
             body: SingleChildScrollView(
               child: ClientNotice(
                 title: 'No se pudo cargar el cliente',
@@ -36,9 +39,14 @@ class ClientFormScreen extends ConsumerWidget {
           data: (client) {
             if (client == null || client.status == 'archived') {
               return Scaffold(
-                appBar: AppBar(
-                  title: const Text('Editar cliente'),
-                  leading: BackButton(onPressed: () => backToClients(context)),
+                appBar: AppPageHeader(
+                  context,
+                  'Editar cliente',
+                  leading: IconButton(
+                    tooltip: 'Atrás',
+                    icon: const Icon(FLucideIcons.arrowLeft),
+                    onPressed: () => backToClients(context),
+                  ),
                 ),
                 body: SingleChildScrollView(
                   child: ClientNotice(
@@ -105,7 +113,9 @@ class _ClientEditorState extends ConsumerState<_ClientEditor> {
   }
 
   Future<void> _save() async {
-    if (_saving || !_form.currentState!.validate()) return;
+    if (_saving) return;
+    final valid = await validateAppForm(_form);
+    if (!mounted || _saving || !valid) return;
     FocusScope.of(context).unfocus();
     setState(() {
       _saving = true;
@@ -197,143 +207,141 @@ class _ClientEditorState extends ConsumerState<_ClientEditor> {
       child: Form(
         key: _form,
         onChanged: () => setState(() {}),
-        child: ListView(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              'Datos básicos',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('client-name'),
-              controller: _name,
-              enabled: !_saving,
-              keyboardType: TextInputType.name,
-              autofillHints: const [AutofillHints.name],
-              textCapitalization: TextCapitalization.words,
-              textInputAction: TextInputAction.next,
-              validator: validateClientName,
-              decoration: const InputDecoration(
-                labelText: 'Nombre completo *',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('client-phone'),
-              controller: _phone,
-              enabled: !_saving,
-              keyboardType: TextInputType.phone,
-              autofillHints: const [AutofillHints.telephoneNumber],
-              textInputAction: TextInputAction.next,
-              validator: validatePhone,
-              decoration: const InputDecoration(
-                labelText: 'Teléfono (opcional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('client-address'),
-              controller: _address,
-              enabled: !_saving,
-              minLines: 1,
-              maxLines: 3,
-              keyboardType: TextInputType.streetAddress,
-              autofillHints: const [AutofillHints.fullStreetAddress],
-              textInputAction: TextInputAction.next,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Dirección (opcional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text('Servicio', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('client-fee'),
-              controller: _fee,
-              enabled: !_saving,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              textInputAction: TextInputAction.next,
-              validator: validateMonthlyFee,
-              decoration: InputDecoration(
-                labelText: currency.isEmpty
-                    ? 'Mensualidad *'
-                    : 'Mensualidad ($currency) *',
-                helperText: 'Hasta 2 decimales, con coma o punto. Sin separadores de miles.',
-                helperMaxLines: 4,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            if (_initial != null)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'La tarifa se aplicará a los cargos que se generen después. El historial se conserva.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const AppSection('Datos básicos'),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('client-name'),
+                controller: _name,
+                enabled: !_saving,
+                keyboardType: TextInputType.name,
+                autofillHints: const [AutofillHints.name],
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                validator: validateClientName,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre completo *',
                 ),
               ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<ServiceStatus>(
-              key: const Key('client-status'),
-              initialValue: _status,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Estado del servicio',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('client-phone'),
+                controller: _phone,
+                enabled: !_saving,
+                keyboardType: TextInputType.phone,
+                autofillHints: const [AutofillHints.telephoneNumber],
+                textInputAction: TextInputAction.next,
+                validator: validatePhone,
+                decoration: const InputDecoration(
+                  labelText: 'Teléfono (opcional)',
+                ),
               ),
-              items: [
-                for (final value in [
-                  ServiceStatus.active,
-                  ServiceStatus.suspended,
-                ])
-                  DropdownMenuItem(
-                    value: value,
-                    child: Text(serviceStatusLabel(value.name)),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('client-address'),
+                controller: _address,
+                enabled: !_saving,
+                minLines: 1,
+                maxLines: 3,
+                keyboardType: TextInputType.streetAddress,
+                autofillHints: const [AutofillHints.fullStreetAddress],
+                textInputAction: TextInputAction.next,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Dirección (opcional)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              const AppSection('Servicio'),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('client-fee'),
+                controller: _fee,
+                enabled: !_saving,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                textInputAction: TextInputAction.next,
+                validator: validateMonthlyFee,
+                decoration: InputDecoration(
+                  labelText: currency.isEmpty
+                      ? 'Mensualidad *'
+                      : 'Mensualidad ($currency) *',
+                  helperText: 'Hasta 2 decimales, con coma o punto. Sin separadores de miles.',
+                  helperMaxLines: 4,
+                ),
+              ),
+              if (_initial != null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'La tarifa se aplicará a los cargos que se generen después. El historial se conserva.',
                   ),
-              ],
-              onChanged: _saving
-                  ? null
-                  : (value) => setState(() => _status = value!),
-            ),
-            const SizedBox(height: 12),
-            Text('Notas', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('client-notes'),
-              controller: _notes,
-              enabled: !_saving,
-              minLines: 2,
-              maxLines: 6,
-              textInputAction: TextInputAction.done,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Notas (opcional)',
-                border: OutlineInputBorder(),
+                ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<ServiceStatus>(
+                key: const Key('client-status'),
+                initialValue: _status,
+                isExpanded: true,
+                icon: const Icon(FLucideIcons.chevronDown, size: 18),
+                decoration: const InputDecoration(
+                  labelText: 'Estado del servicio',
+                ),
+                items: [
+                  for (final value in [
+                    ServiceStatus.active,
+                    ServiceStatus.suspended,
+                  ])
+                    DropdownMenuItem(
+                      value: value,
+                      child: Text(serviceStatusLabel(value.name)),
+                    ),
+                ],
+                onChanged: _saving
+                    ? null
+                    : (value) => setState(() => _status = value!),
               ),
-            ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Semantics(liveRegion: true, child: Text(_error!)),
+              const SizedBox(height: 12),
+              const AppSection('Notas'),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('client-notes'),
+                controller: _notes,
+                enabled: !_saving,
+                minLines: 2,
+                maxLines: 6,
+                textInputAction: TextInputAction.done,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Notas (opcional)',
+                ),
               ),
-            const SizedBox(height: 12),
-            FilledButton(
-              key: const Key('client-save'),
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: CircularProgressIndicator(),
-                    )
-                  : const Text('Guardar cliente', textAlign: TextAlign.center),
-            ),
-            const SizedBox(height: 12),
-          ],
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Semantics(liveRegion: true, child: Text(_error!)),
+                ),
+              const SizedBox(height: 12),
+              FilledButton(
+                key: const Key('client-save'),
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: CircularProgressIndicator(),
+                      )
+                    : const Text(
+                        'Guardar cliente',
+                        textAlign: TextAlign.center,
+                      ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
         ),
       ),
     );

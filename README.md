@@ -1,6 +1,8 @@
 # Mi Red
 
-App Flutter para Android y un único administrador de una red local. Están implementadas T01, T02 y **T03 — Clientes y dispositivos**, con interfaz compacta T03.1 e **IP opcional por dispositivo T03.2**. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Inicio, Cobros y Ajustes siguen siendo provisionales; T04 no está implementada. Ver [persistencia T02](T02_PERSISTENCE.md) y [migración/IP T03.2](T03_2_IP_DEVICES.md).
+App Flutter para Android y un único administrador de una red local. Están implementadas T01, T02 y **T03 — Clientes y dispositivos**, con interfaz compacta T03.1 e **IP opcional por dispositivo T03.2**. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Inicio, Cobros y Ajustes siguen siendo provisionales; T04 no está implementada. Ver [persistencia T02](docs/T02_PERSISTENCE.md) y [migración/IP T03.2](docs/T03_2_IP_DEVICES.md).
+
+**T03.3 — Sistema visual:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con los controles Material existentes. Navegación y tarjetas Forui, campos compactos, filtros contraíbles y copia explícita de IP. Tema según el sistema, sin bloquear el tamaño de texto. Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app. Ver [decisiones, pruebas y capturas reales](T03_3_DESIGN_SYSTEM_REPORT.md).
 
 ## Entorno
 
@@ -58,7 +60,9 @@ flutter test
 
 Las pruebas cubren calendario y finanzas de T02, arranque, rutas, Clientes/dispositivos, filtros contraíbles, errores, formularios, temas claro/oscuro y pantallas de 320–400 dp con texto al 100/200 % y teclado simulado. T03.2 incorpora pruebas de migración real de un archivo v1 con datos e historial, reaperturas, integridad y validación/persistencia IPv4/IPv6. Los datos de prueba son sintéticos.
 
-La aceptación manual completa de T03.1 y el arranque en teléfono físico siguen pendientes. Los resultados actuales y el smoke de actualización Android se distinguen en el [informe T03.2](T03_2_IP_DEVICES.md).
+La aceptación manual completa de T03.1 y el arranque en teléfono físico siguen pendientes. Los resultados actuales y el smoke de actualización Android se distinguen en el [informe T03.2](docs/T03_2_IP_DEVICES.md).
+
+La revisión T03.3 añade un recorrido guiado por ADB sobre API 35 poblado (alta/edición, dispositivos MAC/IPv4/IPv6, copia, filtros, archivo/reactivación y reinicio) y capturas claras/oscuras. No sustituye un informe independiente de T03.1 ni prueba el teléfono físico.
 
 ## SQLite v1 → v2 e IP
 
@@ -85,6 +89,7 @@ lib/
   core/
     navigation/       # go_router, contenedor inferior y error de ruta
     theme/            # Material 3 claro/oscuro según el sistema
+    design_system/    # Tokens compartidos Forui/Material y componentes visuales
     widgets/          # Placeholder compartido
   features/
     dashboard/
@@ -117,7 +122,7 @@ Crear primero esa carpeta fuera del proyecto. Guardar la clave y sus contraseña
 
 Fuente de verdad: [producto](docs/PRODUCT_SPEC.md), [modelo](docs/DATA_MODEL.md), [plan](docs/IMPLEMENTATION_PLAN.md) y [normas](AGENTS.md).
 
-T03.2 termina en la gestión de IP y su migración. **No se inicia T04** sin nueva instrucción. Antes de aceptar el uso en producción quedan la revisión manual y el diagnóstico en el teléfono objetivo. La guía [T02_PERSISTENCE.md](T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](T03_2_IP_DEVICES.md).
+T03.2 termina en la gestión de IP y su migración. **No se inicia T04** sin nueva instrucción. Antes de aceptar el uso en producción quedan la revisión manual y el diagnóstico en el teléfono objetivo. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
 
 ## Resultado de validación T01 (27-10-2026)
 
@@ -136,10 +141,16 @@ T03.2 termina en la gestión de IP y su migración. **No se inicia T04** sin nue
 
 Generación Drift y snapshot v1 correctos; `dart format .` correcto; `flutter analyze` sin incidencias; `flutter test`: **46 pruebas aprobadas**, conservando las 7 de T01. `flutter build apk --debug` generó el APK normal correctamente y se comprobó su arranque en el emulador API 35. Un diagnóstico independiente de SQLite en Android completó apertura/reapertura, versión, FK, integridad y ajustes (`MI_RED_SQLITE_SMOKE_OK`).
 
-El runner de integración Android no completó sus pruebas por desconexiones DDS/VM/ADB; se documentan resultados reales, comandos de diagnóstico y pendientes en [T02_PERSISTENCE.md](T02_PERSISTENCE.md). El repositorio Git ya existe en esta iteración. No se modificaron las pantallas, navegación, tests T01, permisos Android ni archivos de firma.
+El runner de integración Android no completó sus pruebas por desconexiones DDS/VM/ADB; se documentan resultados reales, comandos de diagnóstico y pendientes en [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md). El repositorio Git ya existe en esta iteración. No se modificaron las pantallas, navegación, tests T01, permisos Android ni archivos de firma.
 
 ## Resultado de validación T03.2 (28-10-2026)
 
-Baseline T03.1 confirmado con 82 pruebas. T03.2: **90 pruebas aprobadas**, formato y análisis sin incidencias, APK debug normal compilado. Migración de archivo v1 con clientes, dispositivos, cargos, pago vigente/anulado y ajustes verificada tras tres reaperturas. Smoke API 35 aprobado sobre la BD v1 preexistente, actualizada con `adb install -r`: datos anteriores intactos, IP antiguas NULL e IP sintética persistente tras reinicio en frío. Véase el [informe con archivos y evidencia](T03_2_IP_DEVICES.md).
+Baseline T03.1 confirmado con 82 pruebas. T03.2: **90 pruebas aprobadas**, formato y análisis sin incidencias, APK debug normal compilado. Migración de archivo v1 con clientes, dispositivos, cargos, pago vigente/anulado y ajustes verificada tras tres reaperturas. Smoke API 35 aprobado sobre la BD v1 preexistente, actualizada con `adb install -r`: datos anteriores intactos, IP antiguas NULL e IP sintética persistente tras reinicio en frío. Véase el [informe con archivos y evidencia](docs/T03_2_IP_DEVICES.md).
 
 `flutter build apk --release` compila, pero el APK resultante está **sin firma** y `apksigner verify` falla. Se mantiene la configuración recibida; no instalar/distribuir ese archivo como release válido. Hace falta configurar una clave autorizada fuera de Git para obtener un release instalable. El debug está firmado y no requiere DevFS; el fallo reportado en teléfono y la aceptación visual manual completa siguen pendientes.
+
+## Resultado de validación T03.3 (28-10-2026)
+
+**95 pruebas aprobadas**, conservando las 90 anteriores. Formato y análisis limpios; builds debug/release correctos, release todavía sin firma. Debug instalado con `adb install -r` y arrancado en frío, sin borrar la BD v2. Datos/servicios/migraciones siguen intactos. Se comprobó la UI real a 320 dp, ambos temas y teclado completo; 320/400 dp y texto al 200 % se verifican además por widget tests. [Informe y siete capturas](T03_3_DESIGN_SYSTEM_REPORT.md).
+
+T03.1 sigue sin informe independiente ni cierre retrospectivo de su aceptación; el teléfono físico y DevFS/DDS no se declaran verificados. No se implementó T04.
