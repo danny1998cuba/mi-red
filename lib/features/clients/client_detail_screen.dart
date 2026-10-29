@@ -189,6 +189,16 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
           spacing: 8,
           runSpacing: 8,
           children: [
+            OutlinedButton.icon(
+              key: const Key('client-billing'),
+              onPressed: _busy
+                  ? null
+                  : () => context.push(
+                      '/billing/clients/${Uri.encodeComponent(client.id)}',
+                    ),
+              icon: const Icon(FLucideIcons.receiptText),
+              label: const Text('Cobros e historial'),
+            ),
             if (!archived)
               OutlinedButton.icon(
                 key: const Key('edit-client'),

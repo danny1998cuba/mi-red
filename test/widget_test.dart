@@ -11,7 +11,6 @@ import 'package:mi_red/features/billing/billing_screen.dart';
 import 'package:mi_red/features/clients/clients_screen.dart';
 import 'package:mi_red/features/dashboard/dashboard_screen.dart';
 import 'package:mi_red/features/settings/settings_screen.dart';
-import 'package:mi_red/main.dart' as app;
 
 void main() {
   ProviderContainer testContainer() {
@@ -29,7 +28,12 @@ void main() {
   testWidgets('Starts on the Spanish dashboard with four destinations', (
     tester,
   ) async {
-    app.main();
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: testContainer(),
+        child: const MiRedApp(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(DashboardScreen), findsOneWidget);
@@ -76,7 +80,9 @@ void main() {
       expect(find.byType(destination.type), findsOneWidget);
       expect(
         find.text('Pantalla provisional'),
-        destination.type == ClientsScreen ? findsNothing : findsOneWidget,
+        destination.type == ClientsScreen || destination.type == BillingScreen
+            ? findsNothing
+            : findsOneWidget,
       );
       expect(
         container
@@ -100,8 +106,8 @@ void main() {
   testWidgets('Direct navigation updates the selected destination', (
     tester,
   ) async {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+    final container = testContainer();
+
     container.read(appRouterProvider).go('/billing');
     await tester.pumpWidget(
       UncontrolledProviderScope(container: container, child: const MiRedApp()),
@@ -121,8 +127,8 @@ void main() {
   testWidgets('Unknown route shows a Spanish error and recovers', (
     tester,
   ) async {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
+    final container = testContainer();
+
     await tester.pumpWidget(
       UncontrolledProviderScope(container: container, child: const MiRedApp()),
     );
@@ -143,7 +149,12 @@ void main() {
     ) async {
       tester.platformDispatcher.platformBrightnessTestValue = brightness;
       addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-      await tester.pumpWidget(const ProviderScope(child: MiRedApp()));
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: testContainer(),
+          child: const MiRedApp(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final theme = Theme.of(tester.element(find.byType(DashboardScreen)));
@@ -178,7 +189,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(
         find.text('Pantalla provisional'),
-        label == 'Clientes' ? findsNothing : findsOneWidget,
+        label == 'Clientes' || label == 'Cobros'
+            ? findsNothing
+            : findsOneWidget,
       );
       expect(tester.takeException(), isNull);
     }

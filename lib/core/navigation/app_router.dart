@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/billing/billing_screen.dart';
+import '../../features/billing/client_billing_screen.dart';
 import '../../features/clients/clients_screen.dart';
 import '../../features/clients/client_detail_screen.dart';
 import '../../features/clients/client_form_screen.dart';
@@ -16,6 +17,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     errorBuilder: (context, state) => const RouteErrorScreen(),
     routes: [
+      GoRoute(
+        path: '/billing/clients/:clientId',
+        builder: (context, state) => ClientBillingScreen(
+          clientId: state.pathParameters['clientId']!,
+          focusPeriod: state.uri.queryParameters['period'],
+        ),
+      ),
       GoRoute(
         path: '/clients/new',
         builder: (context, state) => const ClientFormScreen(),

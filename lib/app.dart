@@ -6,6 +6,7 @@ import 'package:forui/forui.dart';
 import 'core/design_system/app_design.dart';
 import 'core/navigation/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/billing/billing_lifecycle.dart';
 
 class MiRedApp extends ConsumerWidget {
   const MiRedApp({super.key});
@@ -28,7 +29,7 @@ class MiRedApp extends ConsumerWidget {
         data: Theme.brightnessOf(context) == Brightness.dark
             ? AppDesign.dark
             : AppDesign.light,
-        child: child!,
+        child: BillingLifecycle(child: child!),
       ),
       routerConfig: ref.watch(appRouterProvider),
     );

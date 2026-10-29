@@ -37,7 +37,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(
           find.text('Pantalla provisional'),
-          label == 'Clientes' ? findsNothing : findsOneWidget,
+          label == 'Clientes' || label == 'Cobros'
+              ? findsNothing
+              : findsOneWidget,
         );
         expect(tester.takeException(), isNull);
       }

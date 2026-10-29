@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:forui/forui.dart';
 import 'package:mi_red/app.dart';
+import 'package:mi_red/core/database/app_database.dart';
+import 'package:mi_red/core/database/database_providers.dart';
 import 'package:mi_red/core/design_system/app_design.dart';
 
 double contrast(Color a, Color b) {
@@ -20,7 +23,20 @@ void main() {
       (tester) async {
         tester.platformDispatcher.platformBrightnessTestValue = brightness;
         addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-        await tester.pumpWidget(const ProviderScope(child: MiRedApp()));
+        final db = AppDatabase(NativeDatabase.memory());
+        final container = ProviderContainer(
+          overrides: [databaseProvider.overrideWithValue(db)],
+        );
+        addTearDown(() async {
+          container.dispose();
+          await db.close();
+        });
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MiRedApp(),
+          ),
+        );
         await tester.pumpAndSettle();
         final context = tester.element(find.byType(FBottomNavigationBar));
         final p = AppPalette.of(context);

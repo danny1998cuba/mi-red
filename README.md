@@ -1,8 +1,8 @@
 # Mi Red
 
-App Flutter para Android y un único administrador de una red local. Están implementadas T01, T02 y **T03 — Clientes y dispositivos**, con interfaz compacta T03.1 e **IP opcional por dispositivo T03.2**. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Inicio, Cobros y Ajustes siguen siendo provisionales; T04 no está implementada. Ver [persistencia T02](docs/T02_PERSISTENCE.md) y [migración/IP T03.2](docs/T03_2_IP_DEVICES.md).
+App Flutter para Android y un único administrador de una red local. Están implementadas T01–T04: persistencia, clientes/dispositivos y **Cobros, pagos e historial**. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Cobros permite consultar mensualidades, registrar pagos completos y anularlos conservando la auditoría. Inicio y Ajustes siguen siendo provisionales. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md) e [informe T04](docs/T04_BILLING_UI_REPORT.md).
 
-**T03.3 — Sistema visual:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con los controles Material existentes. Navegación y tarjetas Forui, campos compactos, filtros contraíbles y copia explícita de IP. Tema según el sistema, sin bloquear el tamaño de texto. Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app. Ver [decisiones, pruebas y capturas reales](T03_3_DESIGN_SYSTEM_REPORT.md).
+**T03.3 — Sistema visual:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con los controles Material existentes. Navegación y tarjetas Forui, campos compactos, filtros contraíbles y copia explícita de IP. Tema según el sistema, sin bloquear el tamaño de texto. Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app. Ver [decisiones, pruebas y capturas reales](docs/T03_3_DESIGN_SYSTEM_REPORT.md).
 
 ## Entorno
 
@@ -40,6 +40,8 @@ flutter build apk --debug
 
 Salida: `build/app/outputs/flutter-apk/app-debug.apk`, firmado con la clave debug local. Funciona como APK independiente; no necesita `flutter run` ni DevFS para abrirse. Se necesita conexión para descargar SDK/dependencias durante la preparación; la gestión de Clientes y SQLite funcionan offline. El manifiesto principal no solicita permisos. Los manifiestos debug/profile conservan INTERNET para las herramientas de desarrollo de Flutter.
 
+Cobros también funciona offline. Elige el mes con las flechas o vuelve al período actual con el icono de calendario. El resumen corresponde al período completo; búsqueda y filtros afectan al listado. Toca un cargo para abrir el historial, o entra por «Cobros e historial» en la ficha de Cliente. «Registrar pago» confirma el importe histórico completo y permite nota opcional. «Anular pago» requiere confirmación y conserva el registro original. El estado del servicio se edita manualmente en Clientes: un cargo candidato a suspensión no corta el servicio. Pagar una mensualidad no liquida otras deudas anteriores.
+
 Para actualizar una instalación de pruebas conservando su BD y firma:
 
 ```powershell
@@ -54,8 +56,8 @@ No desinstalar ni borrar datos para aplicar una migración. Sustituir el ID por 
 
 ```powershell
 dart format .
-flutter analyze
-flutter test
+flutter analyze --no-pub
+flutter test --concurrency=1
 ```
 
 Las pruebas cubren calendario y finanzas de T02, arranque, rutas, Clientes/dispositivos, filtros contraíbles, errores, formularios, temas claro/oscuro y pantallas de 320–400 dp con texto al 100/200 % y teclado simulado. T03.2 incorpora pruebas de migración real de un archivo v1 con datos e historial, reaperturas, integridad y validación/persistencia IPv4/IPv6. Los datos de prueba son sintéticos.
@@ -122,7 +124,7 @@ Crear primero esa carpeta fuera del proyecto. Guardar la clave y sus contraseña
 
 Fuente de verdad: [producto](docs/PRODUCT_SPEC.md), [modelo](docs/DATA_MODEL.md), [plan](docs/IMPLEMENTATION_PLAN.md) y [normas](AGENTS.md).
 
-T03.2 termina en la gestión de IP y su migración. **No se inicia T04** sin nueva instrucción. Antes de aceptar el uso en producción quedan la revisión manual y el diagnóstico en el teléfono objetivo. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
+T04 termina en cobros, pagos completos e historial con anulación. **No se inicia T05** sin nueva instrucción. Antes de aceptar el uso en producción quedan las tareas posteriores del plan y la validación en el teléfono objetivo. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
 
 ## Resultado de validación T01 (27-10-2026)
 
@@ -151,6 +153,10 @@ Baseline T03.1 confirmado con 82 pruebas. T03.2: **90 pruebas aprobadas**, forma
 
 ## Resultado de validación T03.3 (28-10-2026)
 
-**95 pruebas aprobadas**, conservando las 90 anteriores. Formato y análisis limpios; builds debug/release correctos, release todavía sin firma. Debug instalado con `adb install -r` y arrancado en frío, sin borrar la BD v2. Datos/servicios/migraciones siguen intactos. Se comprobó la UI real a 320 dp, ambos temas y teclado completo; 320/400 dp y texto al 200 % se verifican además por widget tests. [Informe y siete capturas](T03_3_DESIGN_SYSTEM_REPORT.md).
+**95 pruebas aprobadas**, conservando las 90 anteriores. Formato y análisis limpios; builds debug/release correctos, release todavía sin firma. Debug instalado con `adb install -r` y arrancado en frío, sin borrar la BD v2. Datos/servicios/migraciones siguen intactos. Se comprobó la UI real a 320 dp, ambos temas y teclado completo; 320/400 dp y texto al 200 % se verifican además por widget tests. [Informe y siete capturas](docs/T03_3_DESIGN_SYSTEM_REPORT.md).
 
 T03.1 sigue sin informe independiente ni cierre retrospectivo de su aceptación; el teléfono físico y DevFS/DDS no se declaran verificados. No se implementó T04.
+
+## Resultado de validación T04 (29-10-2026)
+
+**119 pruebas aprobadas** (95 anteriores + 24 nuevas); `dart format .` y `flutter analyze --no-pub` correctos. Builds Debug y Release correctos; `apksigner verify` aprueba Debug y rechaza Release sin firma. SQLite permanece en v2, sin migraciones ni dependencias nuevas. El [informe T04](docs/T04_BILLING_UI_REPORT.md) detalla el recorrido API 35, fixture sintética, capturas, auditoría y límites de aceptación. T05 no se inicia.
