@@ -12,6 +12,10 @@ import '../../features/clients/device_form_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/settings/business_settings_screen.dart';
+import '../../features/settings/appearance_screen.dart';
+import '../../features/settings/reminders_screen.dart';
+import '../../features/settings/backups_screen.dart';
+import '../../features/settings/about_screen.dart';
 import 'app_shell.dart';
 import 'route_error_screen.dart';
 
@@ -20,6 +24,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     errorBuilder: (context, state) => const RouteErrorScreen(),
     routes: [
+      GoRoute(
+        path: '/settings/appearance',
+        builder: (context, state) => const AppearanceScreen(),
+      ),
+      GoRoute(
+        path: '/settings/reminders',
+        builder: (context, state) => const RemindersScreen(),
+      ),
+      GoRoute(
+        path: '/settings/backups',
+        builder: (context, state) => const BackupsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/about',
+        builder: (context, state) => const AboutScreen(),
+      ),
       GoRoute(
         path: '/settings/business',
         builder: (context, state) => const BusinessSettingsScreen(),

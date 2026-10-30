@@ -17,7 +17,8 @@ import 'backup_providers.dart';
 import 'backup_snapshot.dart';
 
 class BackupSection extends ConsumerStatefulWidget {
-  const BackupSection({super.key});
+  const BackupSection({this.showHeading = true, super.key});
+  final bool showHeading;
   @override
   ConsumerState<BackupSection> createState() => _BackupSectionState();
 }
@@ -76,7 +77,7 @@ class _BackupSectionState extends ConsumerState<BackupSection> {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      const AppSection('Copias de seguridad'),
+      if (widget.showHeading) const AppSection('Copias de seguridad'),
       FCard(
         child: Padding(
           padding: const EdgeInsets.all(AppSpace.md),

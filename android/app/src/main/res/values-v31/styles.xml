@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+    <item name="android:windowSplashScreenBackground">@color/mi_red_splash_background</item>
+    <item name="android:windowSplashScreenAnimatedIcon">@drawable/mi_red_splash_mark</item>
+    <item name="android:windowSplashScreenBrandingImage">@drawable/mi_red_splash_branding</item>
+    <item name="android:windowSplashScreenAnimationDuration">0</item>
+    <item name="android:windowLightStatusBar">true</item>
+  </style>
+  <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+    <item name="android:windowBackground">@color/mi_red_splash_background</item>
+  </style>
+</resources>

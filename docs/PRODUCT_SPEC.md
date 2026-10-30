@@ -78,6 +78,10 @@ El operador de una pequeña red local necesita gestionar desde UN teléfono Andr
 - Acción de pago visible desde Inicio, Cobros y ficha de cliente.
 - Indicadores claros de deuda, pagado y candidato a suspensión, nunca solo color.
 - Confirmar operaciones con pérdida de información; mostrar mensajes de éxito/error y estados vacíos.
+- Fase B: Ajustes es un menú de categorías Forui: Mi negocio, Apariencia, Recordatorios, Copias de seguridad y Acerca de Mi Red. Las subpantallas tienen Atrás y regresan a Ajustes sin duplicar cabecera ni navegación inferior.
+- Apariencia local: Automático según el sistema (predeterminado), Claro u Oscuro; modifica Material, Forui y barras del sistema. Se persiste con SharedPreferencesAsync fuera de SQLite y del formato T07. Restaurar una copia conserva la apariencia del teléfono receptor; un teléfono nuevo usa Automático. Ante lectura/escritura fallida se usa Automático en la sesión y se ofrece reintentar, sin prometer persistencia si el almacenamiento falla.
+- Arranque: lectura aislada de apariencia con límite de 500 ms y sincronización visual Android con límite de 300 ms. No hay espera artificial para mostrar la marca. En API 31+ Android conserva el modo de recursos de la app para el siguiente splash; en API 24–30 el splash nativo sigue el tema del sistema, aunque Flutter conserve Claro/Oscuro.
+- Marca instalada «Mi Red», símbolo local suministrado y splash con «Gestión de clientes y cobros». Acerca muestra versión del paquete instalado, «Desarrollado por CoreX4Dev» y enlace https://corex4dev.com abierto solo por acción explícita; no realiza consultas de red al cargar.
 
 ## 5. Escenarios de aceptación
 1. Crear dos clientes con tarifas diferentes; se crean cargos con importes diferentes.

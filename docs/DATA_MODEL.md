@@ -62,6 +62,8 @@ En los esquemas v1 y v2, todos los instantes de auditoría se almacenan como INT
 - Cualquier reconciliación de períodos y registro/anulación de pagos usa transacciones de BD.
 
 ## Notas de migración y backup
+
+- Fase B no cambia SQLite v2 ni sus cinco tablas. `mi_red.appearance_mode` es una preferencia local SharedPreferencesAsync (DataStore en Android): `light`, `dark`, o clave ausente para Automático. Se excluye del snapshot T07; restaurar no importa ni sobrescribe apariencia. Android API31+ conserva además su modo visual de recursos para el splash, separado de los datos del negocio.
 - SQLite v1 → v2: `Migrator.addColumn(devices, devices.ipAddress)` dentro de una transacción, seguida de `PRAGMA foreign_key_check`. Solo se añade una columna TEXT nullable al final de `devices`; las filas anteriores quedan con IP NULL. No se recrean tablas ni cambian índices/triggers u otras columnas. Nuevas bases se crean directamente en v2. Reabrir v2 no repite la migración; una versión sin ruta implementada se rechaza. Si falla la integridad, se revierte la columna añadida.
 - Conservar `drift_schemas/drift_schema_v1.json` y `drift_schema_v2.json`; utilidades Drift de prueba en `test/generated_migrations/`. Véase `../T03_2_IP_DEVICES.md` para evidencia con registros v1, pagos/anulaciones y reaperturas.
 - Schema version incremental usando migraciones Drift, no `drop-and-recreate` en releases.

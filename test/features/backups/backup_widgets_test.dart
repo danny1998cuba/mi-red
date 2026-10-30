@@ -71,7 +71,7 @@ void main() {
     await db.close();
   });
   Future<void> open(WidgetTester tester) async {
-    container.read(appRouterProvider).go('/settings');
+    container.read(appRouterProvider).go('/settings/backups');
     await tester.pumpWidget(
       UncontrolledProviderScope(container: container, child: const MiRedApp()),
     );
@@ -314,7 +314,7 @@ void main() {
             .value
             .uri
             .path,
-        '/settings',
+        '/settings/backups',
       );
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await container.read(billingSessionProvider.notifier).refresh();

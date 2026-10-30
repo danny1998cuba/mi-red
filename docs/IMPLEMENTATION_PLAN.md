@@ -44,8 +44,8 @@ Trabajar en secuencia; tras cada tarea detenerse y entregar un informe corto. Es
 
 Desarrollado por **CoreX4Dev** · [https://corex4dev.com](https://corex4dev.com).
 
-- **A — Cierre funcional:** Mi negocio (columnas existentes), corrección confirmada de cargo vigente impagado y recaudación del período en Inicio. Sin migración ni otro motor financiero; véase `FINAL_PHASE_A_REPORT.md`. Esta es la única fase autorizada en esta iteración.
-- **B — Ajustes, apariencia e identidad:** reorganización de Ajustes, apariencia, recursos de marca/splash y «Acerca de Mi Red» con atribución CoreX4Dev. Requiere nueva instrucción.
+- **A — Cierre funcional:** implementada y confirmada en Git (`cd57688`). Mi negocio (columnas existentes), corrección confirmada de cargo vigente impagado y recaudación del período en Inicio. Sin migración ni otro motor financiero; véase `FINAL_PHASE_A_REPORT.md`.
+- **B — Ajustes, apariencia e identidad:** implementada y validada en el AVD API35; única fase autorizada en esta iteración. Cinco subpantallas desde Ajustes, apariencia persistente fuera de SQLite/T07, iconos/splash reproducibles con los recursos suministrados y Acerca con metadatos reales y atribución CoreX4Dev. Resultados y límites de aceptación en `FINAL_PHASE_B_REPORT.md`.
 - QA final y firma/distribución conservan los criterios T08 y requieren autorización posterior; la compilación Release sin firma no es una entrega distribuible. Fase A no acredita teléfono físico, DDS/DevFS ni solución de Impeller/Skia.
 
 ## T08 — QA y APK firmado (4–6 h)

@@ -4,7 +4,7 @@ Desarrollado por **CoreX4Dev** · [https://corex4dev.com](https://corex4dev.com)
 
 App Flutter para Android y un único administrador de una red local. Están implementadas T01–T07: persistencia, clientes/dispositivos, **Cobros, pagos e historial**, **Inicio operativo**, WhatsApp/reportes, recordatorios locales y **copias cifradas con restauración completa**. La Fase A incorpora Mi negocio, corrección de cargo vigente impagado y recaudación en Inicio. Ajustes permite editar negocio, activar/probar avisos y crear/restaurar copias mediante el selector Android. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md), [informe T04](docs/T04_BILLING_UI_REPORT.md), [informe T05](docs/T05_DASHBOARD_REPORT.md), [informe T06](docs/T06_COMMUNICATIONS_REPORT.md), [informe T07](docs/T07_BACKUP_RESTORE_REPORT.md) e [informe Fase A](docs/FINAL_PHASE_A_REPORT.md).
 
-**T03.3 — Sistema visual:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con los controles Material existentes. Navegación y tarjetas Forui, campos compactos, filtros contraíbles y copia explícita de IP. Tema según el sistema, sin bloquear el tamaño de texto. Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app. Ver [decisiones, pruebas y capturas reales](docs/T03_3_DESIGN_SYSTEM_REPORT.md).
+**Sistema visual T03.3 / Fase B:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con Material. Ajustes ahora agrupa cinco pantallas: Mi negocio, Apariencia, Recordatorios, Copias y Acerca. Apariencia permite Automático (predeterminado), Claro u Oscuro sin limitar el tamaño de texto. La preferencia se guarda en el dispositivo fuera de SQLite y **no viaja en los respaldos T07**: restaurar conserva el tema local. El nombre del negocio no cambia la marca instalada «Mi Red». Acerca consulta la versión instalada y abre el sitio de CoreX4Dev solo al pulsar el enlace. Ver [informe Fase B](docs/FINAL_PHASE_B_REPORT.md). Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app.
 
 ## Entorno
 
@@ -221,3 +221,23 @@ El AVD mostró problemas de System UI/renderizado al reanudarse; la QA final us�
 El APK normal se instaló mediante `adb install -r` en el AVD sintético dedicado: SQLite conservó exactamente las cinco tablas y su archivo cerrado. Mi negocio persistió solo sus preferencias. La corrección explícita cambió un cargo vigente sin tocar tarifa/servicio/pagos previos; Inicio mostró la recaudación correcta al pagar y volvió a cero al anular. Hay capturas reales en ambos temas en el [informe de Fase A](docs/FINAL_PHASE_A_REPORT.md), junto con archivos, comandos y los pasos restantes de Fase B.
 
 El arranque predeterminado del AVD volvió a mostrar un ANR de System UI; la QA funcional utilizó el extra temporal de Skia sobre el mismo APK. El último reinicio con Skia conservó SQLite pero seguía en carga al capturar, con timeout de lanzamiento. Arranque fiable, teléfono físico y DDS/DevFS no se declaran solucionados. Fase B, QA final y firma quedan para nuevas instrucciones.
+
+## Regenerar identidad Android (Fase B)
+
+Los seis originales en `assets/branding/` se conservan sin modificar. Solo el maestro se incluye como asset Flutter; la previsualización es referencia. Los iconos legacy/adaptativos/monocromáticos y el splash nativo claro/oscuro se generan con PowerShell y System.Drawing en Windows, sin dependencias generadoras adicionales ni recursos iOS:
+
+```powershell
+flutter pub get
+pwsh -NoProfile -File tool/generate_branding.ps1
+flutter build apk --debug
+```
+
+El script usa Inter local de Forui 0.27.7; acepta `-FontPath <ruta-a-Inter.ttf>` si la caché de Pub está en otra ubicación. Verifica dimensiones/transparencia, ajusta el símbolo a la zona segura y comprueba que los originales no cambien. Para reproducir exactamente usar la misma fuente y Windows/System.Drawing; versiones distintas del rasterizador pueden producir bytes distintos. El recurso de notificación permanece separado del launcher.
+
+No se agrega espera artificial al arranque. La lectura del tema tiene un límite de 500 ms y el puente visual Android de 300 ms; los fallos dejan usar Automático y permiten reintentar. API31+ conserva el modo de recursos para el próximo splash; en API24–30 el splash sigue el sistema y Flutter aplica la preferencia local al abrir. Este cambio visual no acredita corregir el problema previo de renderer/ANR. Release continúa sin firma de distribución y no se presenta como APK instalable; Fases C/D y teléfono físico requieren nueva instrucción.
+
+## Resultado de validación Fase B (30-10-2026)
+
+**295 pruebas aprobadas** (271 anteriores + 24 nuevas), formato de 99 archivos sin cambios y análisis limpio. Debug compiló en 47,2 s y tiene firma válida; Release compiló en 191,6 s (67,0MB), sigue **sin firma de distribución y no es instalable todavía**. Los 42 recursos Android se regeneraron idénticos; seis originales intactos. SQLite v2, motor financiero, T07, planificador, permisos y stack Android conservados.
+
+En el AVD sintético API35, `adb install -r` preservó exactamente las cinco tablas, SQLite cerrado y la apariencia local. Las cinco subpantallas, tres modos, seguimiento del sistema, texto al 200 %, notificación claro/oscuro, SAF cancelado, icono normal/temático y splash claro/oscuro tienen evidencia real. Tres aperturas frías desde el icono con Impeller/OpenGLES predeterminado quedaron operativas (Activity Displayed 4,518 s / 3,186 s / 3,741 s), sin recurrir a Skia. Esto no declara corregidos los ANR anteriores ni acredita teléfono físico/DDS/DevFS. [Informe, capturas y pendientes para terminar la app](docs/FINAL_PHASE_B_REPORT.md). Fases C/D no iniciadas.

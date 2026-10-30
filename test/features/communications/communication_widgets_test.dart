@@ -312,7 +312,7 @@ void main() {
   testWidgets(
     'Settings opt-in handles denied/granted/revoked permission and explicit notification test',
     (tester) async {
-      await open(tester, '/settings');
+      await open(tester, '/settings/reminders');
       expect(scheduler.requests, 0);
       expect(
         tester
@@ -435,7 +435,7 @@ void main() {
             expect(find.text('Compartir cancelado.'), findsOneWidget);
             await pressCommunication(tester, 'communication-close');
             tester.view.resetViewInsets();
-            container.read(appRouterProvider).go('/settings');
+            container.read(appRouterProvider).go('/settings/reminders');
             await pumpBilling(tester);
             await pressCommunication(tester, 'reminders-switch');
             expect(
