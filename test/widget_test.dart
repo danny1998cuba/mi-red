@@ -182,13 +182,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    for (final label in ['Clientes', 'Cobros', 'Ajustes', 'Inicio']) {
-      await tester.tap(
-        find.descendant(
-          of: find.byType(FBottomNavigationBar),
-          matching: find.text(label),
-        ),
-      );
+    for (final entry in const {
+      'clients': 'Clientes',
+      'billing': 'Cobros',
+      'settings': 'Ajustes',
+      'home': 'Inicio',
+    }.entries) {
+      final label = entry.value;
+      await tester.tap(find.byKey(ValueKey('navigation-${entry.key}')));
       await tester.pumpAndSettle();
       expect(find.text('Pantalla provisional'), findsNothing);
       if (label == 'Ajustes') {

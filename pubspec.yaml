@@ -2,7 +2,7 @@ name: mi_red
 description: App Android offline para administrar una red local, desarrollada por CoreX4Dev.
 homepage: https://corex4dev.com
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0
 
 environment:
   sdk: ^3.13.7
@@ -43,4 +43,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/branding/mi_red_logo_master.png
+  - assets/branding/mi_red_logo_master.png

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
     padding: const EdgeInsets.all(16),
@@ -11,7 +12,7 @@ class SettingsScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FTileGroup(
-          intrinsicWidth: true,
+          intrinsicWidth: false,
           label: const Text('Preferencias'),
           children: [
             _tile(
@@ -39,7 +40,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         FTileGroup(
-          intrinsicWidth: true,
+          intrinsicWidth: false,
           label: const Text('Datos y seguridad'),
           children: [
             _tile(
@@ -53,7 +54,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         FTileGroup(
-          intrinsicWidth: true,
+          intrinsicWidth: false,
           label: const Text('Información'),
           children: [
             _tile(
@@ -81,6 +82,7 @@ class SettingsScreen extends StatelessWidget {
     child: ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 48),
       child: Row(
+        mainAxisSize: MainAxisSize.max,
         children: [
           Icon(icon, size: 22),
           const SizedBox(width: 12),

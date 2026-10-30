@@ -88,12 +88,7 @@ void main() {
   String metric(WidgetTester tester, String name) =>
       tester.widget<Text>(find.byKey(Key('dashboard-$name'))).data!;
   Future<void> home(WidgetTester tester) async {
-    await tester.tap(
-      find.descendant(
-        of: find.byType(FBottomNavigationBar),
-        matching: find.text('Inicio'),
-      ),
-    );
+    await tester.tap(find.byKey(const Key('navigation-home')));
     await pumpBilling(tester);
   }
 
