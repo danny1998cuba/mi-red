@@ -1,6 +1,6 @@
 # Mi Red
 
-App Flutter para Android y un único administrador de una red local. Están implementadas T01–T05: persistencia, clientes/dispositivos, **Cobros, pagos e historial** e **Inicio operativo**. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Cobros permite consultar mensualidades, registrar pagos completos y anularlos conservando la auditoría. Inicio muestra el período vigente, cifras de cobros, acciones rápidas y clientes activos que requieren revisión por suspensión. Ajustes sigue provisional. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md), [informe T04](docs/T04_BILLING_UI_REPORT.md) e [informe T05](docs/T05_DASHBOARD_REPORT.md).
+App Flutter para Android y un único administrador de una red local. Están implementadas T01–T06: persistencia, clientes/dispositivos, **Cobros, pagos e historial**, **Inicio operativo**, recordatorios individuales por WhatsApp, reportes de texto y recordatorios locales opcionales. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Cobros permite consultar mensualidades, registrar pagos completos y anularlos conservando la auditoría. Inicio muestra el período vigente, cifras de cobros, acciones rápidas y clientes activos que requieren revisión por suspensión. Ajustes permite activar y probar los recordatorios. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md), [informe T04](docs/T04_BILLING_UI_REPORT.md), [informe T05](docs/T05_DASHBOARD_REPORT.md) e [informe T06](docs/T06_COMMUNICATIONS_REPORT.md).
 
 **T03.3 — Sistema visual:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con los controles Material existentes. Navegación y tarjetas Forui, campos compactos, filtros contraíbles y copia explícita de IP. Tema según el sistema, sin bloquear el tamaño de texto. Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app. Ver [decisiones, pruebas y capturas reales](docs/T03_3_DESIGN_SYSTEM_REPORT.md).
 
@@ -38,11 +38,17 @@ Para obtener un APK de desarrollo, firmado automáticamente con la clave de depu
 flutter build apk --debug
 ```
 
-Salida: `build/app/outputs/flutter-apk/app-debug.apk`, firmado con la clave debug local. Funciona como APK independiente; no necesita `flutter run` ni DevFS para abrirse. Se necesita conexión para descargar SDK/dependencias durante la preparación; la gestión de Clientes y SQLite funcionan offline. El manifiesto principal no solicita permisos. Los manifiestos debug/profile conservan INTERNET para las herramientas de desarrollo de Flutter.
+Salida: `build/app/outputs/flutter-apk/app-debug.apk`, firmado con la clave debug local. Funciona como APK independiente; no necesita `flutter run` ni DevFS para abrirse. Se necesita conexión para descargar SDK/dependencias durante la preparación; la gestión de Clientes y SQLite funcionan offline. T06 declara notificaciones y recepción del reinicio para los recordatorios opcionales; solicita permiso de notificaciones solo al activarlos en Android 13+. Los manifiestos debug/profile conservan INTERNET para las herramientas de desarrollo de Flutter.
 
 Cobros también funciona offline. Elige el mes con las flechas o vuelve al período actual con el icono de calendario. El resumen corresponde al período completo; búsqueda y filtros afectan al listado. Toca un cargo para abrir el historial, o entra por «Cobros e historial» en la ficha de Cliente. «Registrar pago» confirma el importe histórico completo y permite nota opcional. «Anular pago» requiere confirmación y conserva el registro original. El estado del servicio se edita manualmente en Clientes: un cargo candidato a suspensión no corta el servicio. Pagar una mensualidad no liquida otras deudas anteriores.
 
 Inicio funciona offline y usa el período abierto por T02, que puede ser el mes siguiente desde el día 30 o el último día válido. «Clientes activos» cuenta el estado manual; «Pagados», «Pendientes» y «Por cobrar» corresponden solo al período mostrado y coinciden con Cobros, incluido historial archivado/suspendido. «Requieren revisión» cuenta clientes distintos actualmente activos con algún cargo candidato impagado, incluso antiguo; muestra los cinco con deuda más antigua y el total real. Abre su historial para revisarlos: no se suspende ni paga automáticamente. «Ver pendientes» abre el período actual de Cobros con Pendientes aplicado. «Actualizar Inicio» vuelve a conciliar mediante T02; también se actualiza al arrancar, reanudar y volver a Inicio.
+
+En «Cobros e historial» de un cliente, un cargo sin pagar ofrece «Recordar por WhatsApp». Revisa el mensaje y el importe histórico, introduce un número internacional explícito (por ejemplo, `+12025550123`, sintético) y pulsa abrir, copiar o compartir. El número editado es temporal. Abrir una aplicación o elegirla en el panel de compartir no confirma envío ni entrega; WhatsApp requiere conectividad para enviar. La app no envía mensajes automáticamente.
+
+En Cobros, «Compartir listado» permite elegir explícitamente entre todo el período y la vista filtrada. Revisa la previsualización antes de copiar o abrir el panel del sistema. Incluye nombre, período, importe, estado y totales; no incluye números, direcciones, MAC, IP ni notas.
+
+En Ajustes, Recordatorios empieza desactivado. Activarlo pide permiso cuando corresponde y prepara avisos locales genéricos para los días 2 y 3, aproximadamente a las 09:00 de la zona horaria del dispositivo, durante seis meses calendario. No requieren internet ni alarmas exactas; Android puede retrasarlos. Se renuevan al abrir/reanudar y se restauran tras reiniciar. «Probar notificación» genera un aviso inmediato únicamente al pulsarlo; tocarlo abre Cobros actuales con Pendientes. Desactivar cancela los avisos de Mi Red. No alteran deudas ni suspenden servicios. Si Android revoca el permiso, la app lo refleja al reanudar y habrá que activarlos otra vez.
 
 Para actualizar una instalación de pruebas conservando su BD y firma:
 
@@ -110,7 +116,7 @@ Riverpod administra el ciclo de vida de `GoRouter` mediante un provider manual y
 
 Dependencias directas añadidas: [`flutter_riverpod 3.4.3`](https://pub.dev/packages/flutter_riverpod/versions/3.4.3), [`go_router 18.1.1`](https://pub.dev/packages/go_router/versions/18.1.1) y `flutter_localizations` del SDK para los textos Material en español. Se elimina `cupertino_icons` por no utilizarse. Conservar `pubspec.lock` en control de versiones para reproducir la resolución.
 
-`core/database` contiene Drift/SQLite, conexión nativa, esquema y providers; los servicios concretos residen en las carpetas `data/` de cada feature. Las integraciones de WhatsApp, compartir, notificaciones y documentos pertenecen a tareas posteriores. No hay servicios remotos.
+`core/database` contiene Drift/SQLite, conexión nativa, esquema y providers; los servicios concretos residen en las carpetas `data/` de cada feature. `features/communications` prepara mensajes/reportes y adapta abrir/copiar/compartir; `features/reminders` planifica los avisos y adapta las notificaciones Android. T06 añade `url_launcher 6.3.3`, `share_plus 13.3.1`, `flutter_local_notifications 22.3.3`, `flutter_timezone 5.1.1` y `timezone 0.11.2`; versiones y requisitos comprobados en el [informe T06](docs/T06_COMMUNICATIONS_REPORT.md). Los documentos de respaldo corresponden a T07. No hay servicios remotos.
 
 ## Firma y custodia (T08)
 
@@ -126,7 +132,7 @@ Crear primero esa carpeta fuera del proyecto. Guardar la clave y sus contraseña
 
 Fuente de verdad: [producto](docs/PRODUCT_SPEC.md), [modelo](docs/DATA_MODEL.md), [plan](docs/IMPLEMENTATION_PLAN.md) y [normas](AGENTS.md).
 
-T05 termina en Inicio operativo y sus accesos a las funciones existentes. **No se inicia T06** sin nueva instrucción. WhatsApp/reportes/recordatorios (T06), respaldo externo/restauración (T07) y QA final/firma de distribución (T08) siguen pendientes, junto con la validación en el teléfono objetivo. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
+T06 termina en WhatsApp/reportes/recordatorios locales. **No se inicia T07** sin nueva instrucción. Respaldo externo/restauración (T07) y QA final/firma de distribución (T08) siguen pendientes, junto con la validación en el teléfono objetivo. T07 deberá conservar IP y el opt-in existente, y reconstruir los recordatorios respetando permisos y zona del dispositivo. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
 
 ## Resultado de validación T01 (27-10-2026)
 
@@ -166,3 +172,9 @@ T03.1 sigue sin informe independiente ni cierre retrospectivo de su aceptación;
 ## Resultado de validación T05 (29-10-2026)
 
 **145 pruebas aprobadas** (119 anteriores + 26 nuevas), formato y análisis limpios, builds Debug/Release correctos. Inicio reutiliza las cifras T04 y una cola de revisión transaccional de lectura. Actualización, pago y navegación offline comprobados con el APK normal en un **AVD API 35 dedicado**, con datos exclusivamente sintéticos; SQLite y el pago se conservan mediante `adb install -r`. El AVD poblado original queda intacto. [Arquitectura, comandos y cuatro capturas](docs/T05_DASHBOARD_REPORT.md). Release continúa sin firma de distribución; teléfono físico y DDS/DevFS siguen pendientes. No se implementa T06.
+
+## Resultado de validación T06 (29-10-2026)
+
+**180 pruebas aprobadas** (145 anteriores + 35 nuevas), `dart format .` correcto (71 archivos, 0 cambios), `flutter analyze` sin incidencias y `git diff --check` correcto. Builds Debug (15,1 s) y Release (173,1 s) completos; Release conserva su estado sin firma de distribución. No cambia el esquema v2 ni el motor financiero.
+
+En el AVD API 35 dedicado: actualización sin perder SQLite, permisos denegado/concedido, mensaje editable, reporte completo/filtrado, panel nativo cancelado sin afirmar envío, aviso visible y apertura fría/con app activa hacia Cobros/Pendientes. Reiniciar recuperó 10 alarmas y desactivar dejó 0 pendientes/0 alarmas activas. Huella contable y demás ajustes preservados; integridad/FK correctas. El AVD original no se modificó. WhatsApp real, teléfono físico y DDS/DevFS quedan pendientes. [Versiones, archivos, comandos, capturas y límites](docs/T06_COMMUNICATIONS_REPORT.md). T06 termina aquí; no se inicia T07/T08.

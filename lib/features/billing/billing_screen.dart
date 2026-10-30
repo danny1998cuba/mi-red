@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design_system/app_components.dart';
 import '../clients/client_providers.dart';
+import '../communications/share_billing_report.dart';
 import 'billing_calendar.dart';
 import 'billing_providers.dart';
 import 'billing_values.dart';
@@ -154,13 +155,13 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                     ),
                   ),
                 ],
-                data: (data) => _content(data),
+                data: (data) => _content(data, period),
               ),
       ],
     );
   }
 
-  List<Widget> _content(BillingPeriodData data) {
+  List<Widget> _content(BillingPeriodData data, BillingPeriod period) {
     final query = _search.text.trim().toLowerCase();
     final rows = data.rows
         .where(
@@ -195,6 +196,13 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                 expanded: _expanded,
                 summary: billingFilterLabel(_filter),
                 onPressed: () => setState(() => _expanded = !_expanded),
+                action: ShareBillingReportAction(
+                  period: period,
+                  data: data,
+                  visibleRows: rows,
+                  filterDescription:
+                      '${billingFilterLabel(_filter)}${query.isNotEmpty ? ' · búsqueda activa' : ''}',
+                ),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 4,

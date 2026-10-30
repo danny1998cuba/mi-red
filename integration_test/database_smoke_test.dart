@@ -35,10 +35,10 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(
-          find.text('Pantalla provisional'),
-          label == 'Ajustes' ? findsOneWidget : findsNothing,
-        );
+        expect(find.text('Pantalla provisional'), findsNothing);
+        if (label == 'Ajustes') {
+          expect(find.text('Recordatorios'), findsOneWidget);
+        }
         if (label == 'Inicio') {
           expect(find.byKey(const Key('dashboard-active')), findsOneWidget);
         }

@@ -80,10 +80,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(destination.type), findsOneWidget);
-      expect(
-        find.text('Pantalla provisional'),
-        destination.type == SettingsScreen ? findsOneWidget : findsNothing,
-      );
+      expect(find.text('Pantalla provisional'), findsNothing);
+      if (destination.type == SettingsScreen) {
+        expect(find.text('Recordatorios'), findsOneWidget);
+      }
       if (destination.type == DashboardScreen) {
         expect(find.byKey(const Key('dashboard-active')), findsOneWidget);
       }
@@ -190,10 +190,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(
-        find.text('Pantalla provisional'),
-        label == 'Ajustes' ? findsOneWidget : findsNothing,
-      );
+      expect(find.text('Pantalla provisional'), findsNothing);
+      if (label == 'Ajustes') {
+        expect(find.text('Recordatorios'), findsOneWidget);
+      }
       if (label == 'Inicio') {
         expect(find.byKey(const Key('dashboard-active')), findsOneWidget);
       }

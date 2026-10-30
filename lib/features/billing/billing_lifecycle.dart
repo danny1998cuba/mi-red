@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'billing_providers.dart';
+import '../reminders/reminder_providers.dart';
 
 class BillingLifecycle extends ConsumerStatefulWidget {
   const BillingLifecycle({required this.child, super.key});
@@ -19,12 +20,16 @@ class _BillingLifecycleState extends ConsumerState<BillingLifecycle>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     ref.read(billingSessionProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(remindersProvider);
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(ref.read(billingSessionProvider.notifier).refresh());
+      unawaited(ref.read(remindersProvider.notifier).refresh());
     }
   }
 

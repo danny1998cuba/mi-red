@@ -4,6 +4,8 @@ Fecha base: 2026-10-27. Idioma: español. Plataforma: Android (APK por instalaci
 
 Revisión T03.2 (2026-10-28): IP opcional por dispositivo; SQLite v1 se conserva mediante migración incremental a v2.
 
+Ampliación explícita T06 (2026-10-29): recordatorios optativos los días 2 y 3, a las 09:00 locales de forma aproximada. No modifican la contabilidad ni el estado del servicio.
+
 ## 1. Problema y usuario
 El operador de una pequeña red local necesita gestionar desde UN teléfono Android, SIN internet, los datos de sus clientes, los equipos/MAC asociados, la cuota mensual individual y el seguimiento del cobro. Solo una persona opera la app. Los datos residen en SQLite; los respaldos se guardan en documentos seleccionados por el usuario y pueden compartirse o transferirse.
 
@@ -42,7 +44,7 @@ El operador de una pequeña red local necesita gestionar desde UN teléfono Andr
 - Las operaciones anteriores requieren una app compatible y conexión para el envío real; si no está instalada, ofrecer copiar texto o diálogo general, sin bloquear la gestión offline.
 
 ### Notificaciones
-- Recordatorio local el día 2 de cada mes para revisar quién tiene cobros pendientes; puede llegar con retraso según Android/batería/permisos.
+- Recordatorios locales optativos el día 2 para revisar cobros pendientes y el día 3 para revisar posibles suspensiones; 09:00 hora local aproximada, con posibles retrasos según Android/batería/permisos.
 - En la app mostrar candidatos desde el día 3. Al abrir, recomputar siempre el estado real; una notificación no marca deudores ni modifica BD.
 - Ajuste para activar/desactivar avisos. Permisos gestionados de manera respetuosa.
 

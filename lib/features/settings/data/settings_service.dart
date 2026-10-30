@@ -11,6 +11,12 @@ class SettingsService {
 
   Future<SettingsRecord> read() => db.select(db.appSettings).getSingle();
 
+  Future<void> setNotificationsEnabled(bool enabled) =>
+      db.transaction(() async {
+        await (db.update(db.appSettings)..where((row) => row.id.equals(1)))
+            .write(AppSettingsCompanion(notificationsEnabled: Value(enabled)));
+      });
+
   Future<void> update({
     required String businessName,
     required String currencyLabel,

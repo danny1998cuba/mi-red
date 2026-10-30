@@ -31,7 +31,7 @@ Trabajar en secuencia; tras cada tarea detenerse y entregar un informe corto. Es
 ## T06 — WhatsApp, reportes y recordatorios (4–7 h)
 - Abrir WhatsApp/chat con mensaje prellenado, teléfono válido y sin envío automático.
 - Compartir reporte de texto del período/filtro mediante diálogo nativo (incluye elección de WhatsApp).
-- Notificación local inexacta el día 2 y ajuste para apagarla. Al tocar, abrir Cobros.
+- Recordatorios locales inexactos los días 2 y 3 (ampliación explícita T06), con ajuste optativo para activarlos/desactivarlos. Al tocar, abrir Cobros actualizado.
 - **Aceptación:** no requiere internet para generar texto/estados; avisos no cambian la BD; funcionamiento digno si WhatsApp está ausente y si se deniegan permisos.
 
 ## T07 — Backup y restauración (5–8 h)

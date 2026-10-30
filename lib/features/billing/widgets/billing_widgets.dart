@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design_system/app_components.dart';
 import '../../../core/design_system/app_design.dart';
 import '../../clients/client_values.dart';
+import '../../communications/whatsapp_reminder.dart';
 import '../billing_calendar.dart';
 import '../billing_values.dart';
 import '../data/billing_queries.dart';
@@ -190,6 +191,12 @@ class BillingChargeCard extends StatelessWidget {
                         onPressed: openHistory,
                         icon: const Icon(FLucideIcons.history, size: 18),
                         label: const Text('Ver historial'),
+                      ),
+                    if (!showHistoryLink && item.activePayment == null)
+                      WhatsAppReminderAction(
+                        client: client,
+                        item: item,
+                        currency: currencyLabel,
                       ),
                   ],
                 ),

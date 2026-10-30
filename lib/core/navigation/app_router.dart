@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -68,6 +69,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/billing',
             builder: (context, state) => BillingScreen(
+              key: ValueKey(state.uri.toString()),
               initialFilter: state.uri.queryParameters['filter'] == 'unpaid'
                   ? BillingFilter.unpaid
                   : BillingFilter.all,
