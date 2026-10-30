@@ -8,6 +8,7 @@ import '../../core/design_system/app_components.dart';
 import '../../core/design_system/app_design.dart';
 import '../reminders/reminder_providers.dart';
 import '../reminders/reminder_scheduler.dart';
+import '../backups/backup_section.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -64,10 +65,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               data: (data) => _settings(data),
             ),
         const SizedBox(height: 16),
+        const BackupSection(),
+        const SizedBox(height: 16),
         const AppSection('Otros ajustes'),
-        const Text(
-          'La configuración del negocio y los respaldos aún no están disponibles.',
-        ),
+        const Text('La configuración del negocio aún no está disponible.'),
       ],
     ),
   );

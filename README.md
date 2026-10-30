@@ -1,6 +1,6 @@
 # Mi Red
 
-App Flutter para Android y un único administrador de una red local. Están implementadas T01–T06: persistencia, clientes/dispositivos, **Cobros, pagos e historial**, **Inicio operativo**, recordatorios individuales por WhatsApp, reportes de texto y recordatorios locales opcionales. Clientes permite buscar, filtrar, crear, editar, archivar/reactivar y gestionar dispositivos con MAC e IPv4/IPv6 independientes. Cobros permite consultar mensualidades, registrar pagos completos y anularlos conservando la auditoría. Inicio muestra el período vigente, cifras de cobros, acciones rápidas y clientes activos que requieren revisión por suspensión. Ajustes permite activar y probar los recordatorios. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md), [informe T04](docs/T04_BILLING_UI_REPORT.md), [informe T05](docs/T05_DASHBOARD_REPORT.md) e [informe T06](docs/T06_COMMUNICATIONS_REPORT.md).
+App Flutter para Android y un único administrador de una red local. Están implementadas T01–T07: persistencia, clientes/dispositivos, **Cobros, pagos e historial**, **Inicio operativo**, WhatsApp/reportes, recordatorios locales y **copias cifradas con restauración completa**. Ajustes permite activar/probar avisos y crear/restaurar copias mediante el selector Android. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md), [informe T04](docs/T04_BILLING_UI_REPORT.md), [informe T05](docs/T05_DASHBOARD_REPORT.md), [informe T06](docs/T06_COMMUNICATIONS_REPORT.md) e [informe T07](docs/T07_BACKUP_RESTORE_REPORT.md).
 
 **T03.3 — Sistema visual:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con los controles Material existentes. Navegación y tarjetas Forui, campos compactos, filtros contraíbles y copia explícita de IP. Tema según el sistema, sin bloquear el tamaño de texto. Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app. Ver [decisiones, pruebas y capturas reales](docs/T03_3_DESIGN_SYSTEM_REPORT.md).
 
@@ -60,6 +60,18 @@ adb -s emulator-5554 shell am start -W -n com.mired.offline/.MainActivity
 
 No desinstalar ni borrar datos para aplicar una migración. Sustituir el ID por el dispositivo correspondiente. El fallo de arranque reportado en teléfono sigue sin diagnóstico: no hay teléfono físico conectado. Capturar `adb -s <id> logcat -d -b crash` y el resultado de `am start -W` para distinguir fallo de instalación, cierre del proceso y fallo de conexión del depurador.
 
+## Crear y recuperar copias
+
+En Ajustes → **Copias de seguridad** → Crear copia, define y confirma una contraseña de al menos 12 caracteres. Pulsa **Cifrar y elegir destino**, elige un documento (por ejemplo Descargas, Documentos o SD) y espera la confirmación con nombre, fecha y destino. Cancelar o fallar el guardado no registra éxito. El archivo `.miredbk` está cifrado con AES-256-GCM y contraseña derivada con PBKDF2-SHA256 (250000 iteraciones); contiene todos los clientes, equipos/IP/MAC, mensualidades, pagos/anulados/auditoría y ajustes. No incluye permisos ni alarmas del sistema.
+
+**Olvidar la contraseña impide recuperar esa copia.** Mi Red no guarda la contraseña ni dispone de servidor de recuperación. Guarda la contraseña separada y conserva otra copia del archivo fuera del teléfono: una única copia en el mismo equipo no protege contra pérdida o avería.
+
+Para recuperar, incluso después de reinstalar: Ajustes → Restaurar copia → seleccionar `.miredbk` → contraseña → **Comprobar copia**. Revisa fecha, versión y cantidades frente a la base actual; marca la aceptación y pulsa **Reemplazar datos**. Esto sustituye TODOS los datos, sin fusionarlos. El archivo se autentica/valida antes de permitir el reemplazo; un error durante la transacción conserva la base anterior. El documento original no se borra. Al finalizar, vuelve a Inicio y revisa Clientes/Cobros.
+
+Una copia antigua recupera su historial exacto; la conciliación posterior puede generar mensualidades aún no existentes según las reglas habituales, sin reescribir pagos. Los recordatorios se reconstruyen según el permiso real y la zona del dispositivo; si Android falla después del commit, se informa que los datos se restauraron y que hay que revisar los avisos en Ajustes. No se importa ningún permiso.
+
+Formato 1 compatible con SQLite v2: todas las columnas son obligatorias, incluida IP nullable. No se admiten JSON sin cifrar, archivos antiguos sin IP ni versiones futuras; no hubo un formato de backup anterior implementado. Límite: 16 MiB de payload y 100000 registros totales. La fecha de última copia se actualiza después del guardado externo; el snapshot conserva el valor previo de ese ajuste y restaurarlo recupera ese valor. [Formato, seguridad, pruebas y límites](docs/T07_BACKUP_RESTORE_REPORT.md).
+
 ## Verificación
 
 ```powershell
@@ -88,7 +100,7 @@ dart run drift_dev schema dump lib/core/database/app_database.dart drift_schemas
 dart run drift_dev schema generate drift_schemas/ test/generated_migrations/
 ```
 
-Versionar los dos snapshots y los helpers generados; nunca sustituir el v1 por el actual. T07 deberá incluir IP en exportación/restauración; todavía no existe backup externo.
+Versionar los dos snapshots y los helpers generados; nunca sustituir el v1 por el actual. T07 incluye IP/NULL en las copias cifradas y no modifica esta migración.
 
 ## Estructura y decisiones
 
@@ -106,6 +118,9 @@ lib/
     clients/
     billing/
     settings/
+    communications/
+    reminders/
+    backups/
 test/
   widget_test.dart
 ```
@@ -116,7 +131,7 @@ Riverpod administra el ciclo de vida de `GoRouter` mediante un provider manual y
 
 Dependencias directas añadidas: [`flutter_riverpod 3.4.3`](https://pub.dev/packages/flutter_riverpod/versions/3.4.3), [`go_router 18.1.1`](https://pub.dev/packages/go_router/versions/18.1.1) y `flutter_localizations` del SDK para los textos Material en español. Se elimina `cupertino_icons` por no utilizarse. Conservar `pubspec.lock` en control de versiones para reproducir la resolución.
 
-`core/database` contiene Drift/SQLite, conexión nativa, esquema y providers; los servicios concretos residen en las carpetas `data/` de cada feature. `features/communications` prepara mensajes/reportes y adapta abrir/copiar/compartir; `features/reminders` planifica los avisos y adapta las notificaciones Android. T06 añade `url_launcher 6.3.3`, `share_plus 13.3.1`, `flutter_local_notifications 22.3.3`, `flutter_timezone 5.1.1` y `timezone 0.11.2`; versiones y requisitos comprobados en el [informe T06](docs/T06_COMMUNICATIONS_REPORT.md). Los documentos de respaldo corresponden a T07. No hay servicios remotos.
+`core/database` contiene Drift/SQLite, conexión nativa, esquema y providers; los servicios concretos residen en las carpetas `data/` de cada feature. `features/communications` prepara mensajes/reportes y adapta abrir/copiar/compartir; `features/reminders` planifica los avisos y adapta las notificaciones Android. T06 añade `url_launcher 6.3.3`, `share_plus 13.3.1`, `flutter_local_notifications 22.3.3`, `flutter_timezone 5.1.1` y `timezone 0.11.2`; versiones y requisitos comprobados en el [informe T06](docs/T06_COMMUNICATIONS_REPORT.md). `features/backups` separa snapshot/validación, cifrado, transacción y adaptador SAF de la UI; añade `cryptography 2.9.0`, `cryptography_flutter 2.3.4` y `flutter_file_dialog 3.3.3`, sin upgrades del stack ni permisos globales de almacenamiento. No hay servicios remotos.
 
 ## Firma y custodia (T08)
 
@@ -132,7 +147,7 @@ Crear primero esa carpeta fuera del proyecto. Guardar la clave y sus contraseña
 
 Fuente de verdad: [producto](docs/PRODUCT_SPEC.md), [modelo](docs/DATA_MODEL.md), [plan](docs/IMPLEMENTATION_PLAN.md) y [normas](AGENTS.md).
 
-T06 termina en WhatsApp/reportes/recordatorios locales. **No se inicia T07** sin nueva instrucción. Respaldo externo/restauración (T07) y QA final/firma de distribución (T08) siguen pendientes, junto con la validación en el teléfono objetivo. T07 deberá conservar IP y el opt-in existente, y reconstruir los recordatorios respetando permisos y zona del dispositivo. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
+T07 termina en respaldo cifrado/restauración completa y reconstrucción de avisos. **No se inicia T08** sin nueva instrucción. QA final/firma de distribución y validación en el teléfono objetivo siguen pendientes. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
 
 ## Resultado de validación T01 (27-10-2026)
 
@@ -178,3 +193,11 @@ T03.1 sigue sin informe independiente ni cierre retrospectivo de su aceptación;
 **180 pruebas aprobadas** (145 anteriores + 35 nuevas), `dart format .` correcto (71 archivos, 0 cambios), `flutter analyze` sin incidencias y `git diff --check` correcto. Builds Debug (15,1 s) y Release (173,1 s) completos; Release conserva su estado sin firma de distribución. No cambia el esquema v2 ni el motor financiero.
 
 En el AVD API 35 dedicado: actualización sin perder SQLite, permisos denegado/concedido, mensaje editable, reporte completo/filtrado, panel nativo cancelado sin afirmar envío, aviso visible y apertura fría/con app activa hacia Cobros/Pendientes. Reiniciar recuperó 10 alarmas y desactivar dejó 0 pendientes/0 alarmas activas. Huella contable y demás ajustes preservados; integridad/FK correctas. El AVD original no se modificó. WhatsApp real, teléfono físico y DDS/DevFS quedan pendientes. [Versiones, archivos, comandos, capturas y límites](docs/T06_COMMUNICATIONS_REPORT.md). T06 termina aquí; no se inicia T07/T08.
+
+## Resultado de validación T07 (30-10-2026)
+
+**230 pruebas aprobadas** (180 anteriores + 50 nuevas), formato de 83 archivos sin cambios, análisis limpio y `git diff --check` correcto. Debug (94,4 s) y Release (169,8 s, 63,5 MB) compilados; Debug tiene firma válida, Release sigue sin firma de distribución. SQLite permanece en v2 y no cambian los servicios financieros ni la configuración Android.
+
+En un AVD API35 exclusivo y con datos sintéticos, el archivo cifrado se guardó mediante SAF en Descargas y se abrió desde el selector para autenticar/restaurar. Cancelaciones, contraseña incorrecta y corrupción conservaron las cinco tablas. Reemplazar datos modificados y recuperar tras desinstalar/reinstalar restauró exactamente todas sus filas y campos, con integridad/FK correctas y 10 avisos reconstruidos usando permiso real. El documento externo sobrevivió a la desinstalación; no se publica su contraseña ni el archivo.
+
+El AVD mostró problemas de System UI/renderizado al reanudarse; la QA final usó temporalmente Skia mediante un extra de lanzamiento, sin cambiar el APK. Eso no acredita el arranque predeterminado ni el teléfono físico. El [informe T07](docs/T07_BACKUP_RESTORE_REPORT.md) incluye resultados, capturas y una sección **«Qué falta para terminar la aplicación»**: configuración del negocio, edición confirmada de cargo vigente impagado, recaudación en Inicio y validación/firma/guías finales de T08. Esos pendientes no se implementaron en T07.

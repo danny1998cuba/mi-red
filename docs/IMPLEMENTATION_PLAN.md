@@ -35,8 +35,8 @@ Trabajar en secuencia; tras cada tarea detenerse y entregar un informe corto. Es
 - **Aceptación:** no requiere internet para generar texto/estados; avisos no cambian la BD; funcionamiento digno si WhatsApp está ausente y si se deniegan permisos.
 
 ## T07 — Backup y restauración (5–8 h)
-- Incluir la IP opcional por dispositivo incorporada en SQLite v2/T03.2 y definir compatibilidad con respaldos sin ese campo. Esta nota no adelanta la implementación de T07.
-- Exportación externa con SAF, JSON versionado con checksum; restauración con previsualización, validación, copia previa y transacción.
+- Incluir la IP opcional por dispositivo incorporada en SQLite v2/T03.2. Formato 1 admite esquema 2 completo; respaldos sin IP o con versiones desconocidas se rechazan, sin inventar valores ni modificar historia.
+- Exportación externa con SAF, snapshot versionado cifrado `.miredbk` (ampliación explícita T07: AES-256-GCM/PBKDF2, encabezado autenticado); restauración con previsualización, validación completa, protección transaccional y rollback probado. Sin cambios de esquema v2 ni motor financiero.
 - Comprobar que no dependa del sandbox privado. Avisar privacidad del archivo.
 - **Aceptación:** ciclo exportar/restaurar íntegro en Android real, incluido archivo corrupto, incompatibilidad y cancelación sin pérdida de datos.
 

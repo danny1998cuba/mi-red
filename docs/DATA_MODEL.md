@@ -64,6 +64,7 @@ En los esquemas v1 y v2, todos los instantes de auditoría se almacenan como INT
 - Conservar `drift_schemas/drift_schema_v1.json` y `drift_schema_v2.json`; utilidades Drift de prueba en `test/generated_migrations/`. Véase `../T03_2_IP_DEVICES.md` para evidencia con registros v1, pagos/anulaciones y reaperturas.
 - Schema version incremental usando migraciones Drift, no `drop-and-recreate` en releases.
 - El archivo de backup tiene versión propia, separada del schema SQLite; validar antes de importar.
+- T07: `.miredbk` formato 1 contiene las cinco tablas de esquema 2, con columnas SQL explícitas e instantes INTEGER de milisegundos, sin convertirlos a texto o alterar sus valores. Incluye todas las IP y `notifications_enabled`; no incluye permisos ni cachés del SO. Formatos/esquemas anteriores sin IP y versiones futuras se rechazan, ya que no hubo respaldos implementados antes de T07. La autenticidad AES-GCM y la validación completa preceden al reemplazo transaccional.
 - Exportar un snapshot consistente (transacción de lectura o mecanismo equivalente), NO copiar un archivo SQLite abierto ignorando WAL.
 - Al restaurar, validar todo el payload antes del reemplazo y aplicar en una sola transacción; no borrar datos actuales al fallar.
-- T07 deberá exportar/restaurar `devices.ip_address`, incluyendo NULL, y definir compatibilidad de respaldos anteriores sin IP. No hay backup/restauración implementado en T03.2.
+- El contexto histórico de T03.2 no incluía respaldos. T07 conserva `devices.ip_address`, incluyendo NULL, sin modificar schemaVersion ni la migración v1→v2. La conciliación y los permisos reales se aplican separadamente después de restaurar.

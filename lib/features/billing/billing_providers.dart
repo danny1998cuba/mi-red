@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/database_providers.dart';
+import '../../core/database/database_maintenance.dart';
 import '../clients/client_providers.dart';
 import 'billing_calendar.dart';
 import 'data/billing_queries.dart';
@@ -33,6 +34,7 @@ class BillingSession extends AsyncNotifier<LocalDate> {
   Future<LocalDate> build() => _reconcile();
 
   Future<void> refresh() async {
+    if (ref.read(databaseMaintenanceProvider).active) return;
     if (state.isLoading) {
       // Coalesce overlapping entry/resume requests. Errors remain visible in state.
       try {

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/database/database_maintenance.dart';
+
 import 'billing_providers.dart';
 import '../reminders/reminder_providers.dart';
 
@@ -28,6 +30,7 @@ class _BillingLifecycleState extends ConsumerState<BillingLifecycle>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      if (ref.read(databaseMaintenanceProvider).active) return;
       unawaited(ref.read(billingSessionProvider.notifier).refresh());
       unawaited(ref.read(remindersProvider.notifier).refresh());
     }

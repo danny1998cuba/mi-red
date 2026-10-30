@@ -6,6 +6,8 @@ Revisión T03.2 (2026-10-28): IP opcional por dispositivo; SQLite v1 se conserva
 
 Ampliación explícita T06 (2026-10-29): recordatorios optativos los días 2 y 3, a las 09:00 locales de forma aproximada. No modifican la contabilidad ni el estado del servicio.
 
+Ampliación explícita T07 (2026-10-29): copia completa cifrada por contraseña en `.miredbk`, con AES-256-GCM e integridad autenticada. Sustituye la propuesta anterior de JSON público con checksum; no existe recuperación de contraseña.
+
 ## 1. Problema y usuario
 El operador de una pequeña red local necesita gestionar desde UN teléfono Android, SIN internet, los datos de sus clientes, los equipos/MAC asociados, la cuota mensual individual y el seguimiento del cobro. Solo una persona opera la app. Los datos residen en SQLite; los respaldos se guardan en documentos seleccionados por el usuario y pueden compartirse o transferirse.
 
@@ -50,11 +52,13 @@ El operador de una pequeña red local necesita gestionar desde UN teléfono Andr
 
 ### Ajustes y respaldo
 - Ajustar nombre del negocio, etiqueta de moneda, código telefónico por defecto (opcional), activar/desactivar avisos.
-- Exportar **copia completa** seleccionando carpeta/archivo con el diálogo del sistema Android. Formato versionado, por ejemplo `.mired-backup.json`, con clientes, dispositivos, cargos, pagos y ajustes, metadatos y suma SHA-256 del contenido serializado de manera determinista.
-- En T07, cada dispositivo exportado/restaurado debe incluir su IP opcional, además de la MAC. El respaldo todavía no está implementado; su versión es independiente de SQLite v1/v2 y deberá definir la compatibilidad con archivos sin IP.
-- Restaurar desde archivo: comprobar versión, integridad, relaciones, unicidad y valores; mostrar vista previa del conteo de registros y aviso de reemplazo; generar una copia local de seguridad previa y restaurar en transacción, con rollback ante error.
+- Exportar **copia completa** mediante Storage Access Framework. Archivo `.miredbk` formato 1: encabezado sin datos personales, sal/nonce nuevos, PBKDF2-HMAC-SHA256 (250000 iteraciones), AES-256-GCM con encabezado autenticado. Payload estructurado con las cinco tablas y todas sus columnas, metadatos y conteos; nunca copiar en caliente el SQLite abierto ni publicar JSON sin cifrar.
+- Incluye IP opcional (también NULL), MAC, IDs, importes enteros, fechas, auditoría y ajustes, incluido `notifications_enabled`. Formato de copia independiente de SQLite: formato 1 admite solo esquema 2 con todas las columnas presentes; archivos antiguos sin IP o versiones futuras se rechazan explícitamente. No hubo un formato de respaldo implementado antes de T07.
+- Restaurar: seleccionar, autenticar y validar completamente antes de mostrar fecha/versiones/conteos y diferencia frente a los datos actuales. Confirmación explícita «Reemplazar datos». Snapshot consistente previo en memoria y reemplazo en una sola transacción SQLite con FK activas, verificando integridad y filas; ante fallo, rollback íntegro. No se fusionan bases. SQLite conserva las páginas originales hasta confirmar; esa protección local no cuenta como copia externa.
+- Límite: 16 MiB de payload y 100000 registros en total; encabezado/tag añaden 60 bytes. Contraseña nueva de al menos 12 caracteres; si se olvida, el archivo no se puede recuperar. No se guardan contraseña ni snapshot descifrado en documentos públicos.
 - Una copia dentro del espacio privado de la app NO cuenta como backup recuperable después de desinstalarla; el usuario debe poder guardar en Documentos/Descargas/otra ubicación accesible.
-- Recordar visualmente cuándo se realizó el último respaldo. Los archivos exportados pueden contener datos personales en texto claro: mostrar advertencia de privacidad al compartirlos.
+- Registrar fecha de última copia solo tras el guardado confirmado; mostrar nombre, fecha y destino elegido, sin afirmar que está fuera del teléfono. Aconsejar otra copia en un equipo/lugar distinto. El snapshot conserva exactamente el valor previo de `last_backup_at`; restaurarlo recupera ese valor, sin reescribirlo con la fecha de importación.
+- Tras el commit se reconstruyen los recordatorios usando permisos reales y zona actual; no se importan permisos ni alarmas. Si el sistema falla después del commit, informar datos restaurados y avisos pendientes de revisión, sin fingir rollback. La conciliación posterior usa las reglas existentes y puede crear cargos que aún no existían en una copia antigua.
 
 ## 3. Exclusiones explícitas
 - Login/cuentas, panel web, nube, API, sincronización, multiusuario.

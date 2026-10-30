@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/database_providers.dart';
+import '../../core/database/database_maintenance.dart';
 import '../../core/navigation/app_router.dart';
 import '../clients/client_providers.dart';
 import 'reminder_plan.dart';
@@ -45,7 +46,7 @@ class RemindersController extends AsyncNotifier<ReminderState> {
   Future<ReminderState> build() => _refresh();
 
   void _onTap(String payload) {
-    if (!ref.mounted) return;
+    if (!ref.mounted || ref.read(databaseMaintenanceProvider).active) return;
     for (final kind in ReminderKind.values) {
       if (payload == kind.name) {
         ref.read(reminderNavigationProvider)(kind);
@@ -148,7 +149,25 @@ class RemindersController extends AsyncNotifier<ReminderState> {
     if (ref.mounted) state = result;
   }
 
-  Future<void> refresh() => _run('refresh', _refresh);
+  Future<void> refresh() => ref.read(databaseMaintenanceProvider).active
+      ? Future.value()
+      : _run('refresh', _refresh);
+
+  Future<void> settle() async {
+    if (state.isLoading) {
+      try {
+        await future;
+      } catch (_) {
+        /* Backups remain available on OS failure. */
+      }
+    }
+    await _operation;
+  }
+
+  Future<void> rebuildAfterRestore() => _run('restore', () async {
+    _signature = null;
+    return _refresh();
+  });
 
   Future<void> setEnabled(bool enabled) => _run(
     enabled ? 'enable' : 'disable',
