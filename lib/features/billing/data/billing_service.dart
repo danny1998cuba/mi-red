@@ -35,6 +35,42 @@ class BillingService {
 
   final AppDatabase db;
 
+  /// Explicit correction of an unpaid current charge, never a fee/history rewrite.
+  /// expectedAmountMinor binds the confirmation to the amount the operator reviewed.
+  Future<void> correctChargeAmount({
+    required String chargeId,
+    required int expectedAmountMinor,
+    required int amountMinor,
+    required LocalDate today,
+  }) => db.transaction(() async {
+    if (amountMinor < 0 || amountMinor > 9223372036854775807) {
+      throw ArgumentError('El importe no es válido.');
+    }
+    final charge = await (db.select(
+      db.charges,
+    )..where((row) => row.id.equals(chargeId))).getSingleOrNull();
+    if (charge == null) throw StateError('El cargo no existe.');
+    if (charge.periodKey != currentPeriod(today).key) {
+      throw StateError('Solo se puede corregir el período vigente.');
+    }
+    final active =
+        await (db.select(db.payments)..where(
+              (row) => row.chargeId.equals(chargeId) & row.voidedAt.isNull(),
+            ))
+            .getSingleOrNull();
+    if (active != null) throw StateError('El cargo ya tiene un pago vigente.');
+    if (charge.amountMinor != expectedAmountMinor) {
+      throw StateError(
+        'El importe cambió. Cierra y revisa la mensualidad antes de confirmar otra vez.',
+      );
+    }
+    if (amountMinor == charge.amountMinor) {
+      throw StateError('El nuevo importe debe ser distinto del actual.');
+    }
+    await (db.update(db.charges)..where((row) => row.id.equals(chargeId)))
+        .write(ChargesCompanion(amountMinor: Value(amountMinor)));
+  });
+
   Future<int> reconcile({required LocalDate today, DateTime? recordedAt}) =>
       db.transaction(() async {
         final clients = await (db.select(

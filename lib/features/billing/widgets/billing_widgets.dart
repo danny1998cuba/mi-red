@@ -12,6 +12,7 @@ import '../billing_values.dart';
 import '../data/billing_queries.dart';
 import '../data/billing_service.dart';
 import 'payment_action.dart';
+import 'charge_correction_action.dart';
 
 class ChargeStatusBadge extends StatelessWidget {
   const ChargeStatusBadge(this.status, {super.key});
@@ -191,6 +192,12 @@ class BillingChargeCard extends StatelessWidget {
                         onPressed: openHistory,
                         icon: const Icon(FLucideIcons.history, size: 18),
                         label: const Text('Ver historial'),
+                      ),
+                    if (!showHistoryLink && item.activePayment == null)
+                      ChargeCorrectionAction(
+                        charge: charge,
+                        clientName: client.fullName,
+                        currencyLabel: currencyLabel,
                       ),
                     if (!showHistoryLink && item.activePayment == null)
                       WhatsAppReminderAction(

@@ -113,6 +113,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const SizedBox(height: AppSpace.md),
                 _DashboardMetrics(data),
                 const SizedBox(height: AppSpace.md),
+                FCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpace.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text('Recaudado este período'),
+                        const SizedBox(height: AppSpace.xs),
+                        Text(
+                          formatMoneyMinor(
+                            billing.summary.collectedMinor,
+                            currencyLabel: billing.currencyLabel,
+                          ),
+                          key: const Key('dashboard-collected'),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const Text(
+                          'Pagos vigentes del período mostrado. No incluye pagos anulados ni otros períodos.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.md),
                 if (data.totalClients == 0)
                   AppEmptyState(
                     title: 'Añade tu primer cliente',

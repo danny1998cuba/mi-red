@@ -11,6 +11,7 @@ import '../../features/clients/client_form_screen.dart';
 import '../../features/clients/device_form_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/settings/business_settings_screen.dart';
 import 'app_shell.dart';
 import 'route_error_screen.dart';
 
@@ -19,6 +20,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     errorBuilder: (context, state) => const RouteErrorScreen(),
     routes: [
+      GoRoute(
+        path: '/settings/business',
+        builder: (context, state) => const BusinessSettingsScreen(),
+      ),
       GoRoute(
         path: '/billing/clients/:clientId',
         builder: (context, state) => ClientBillingScreen(

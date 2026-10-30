@@ -2,6 +2,8 @@
 
 Fecha base: 2026-10-27. Idioma: español. Plataforma: Android (APK por instalación directa).
 
+Desarrollado por **CoreX4Dev** · [https://corex4dev.com](https://corex4dev.com). La atribución visible en «Acerca de» y los recursos de identidad corresponden a Fase B.
+
 Revisión T03.2 (2026-10-28): IP opcional por dispositivo; SQLite v1 se conserva mediante migración incremental a v2.
 
 Ampliación explícita T06 (2026-10-29): recordatorios optativos los días 2 y 3, a las 09:00 locales de forma aproximada. No modifican la contabilidad ni el estado del servicio.
@@ -27,6 +29,7 @@ El operador de una pequeña red local necesita gestionar desde UN teléfono Andr
 - Al abrir la app, conciliar cargos faltantes de cada período aplicable sin duplicarlos. Los clientes activos dados de alta antes del corte generan cargo para ese período; si se registran dentro de un período ya abierto, se genera su primer cargo del período vigente una sola vez. No generar cargos retroactivos para períodos anteriores a la fecha de alta.
 - Al archivar un cliente, no generar cargos nuevos. Los cargos ya emitidos y deudas históricas permanecen. La reactivación surte efecto desde el período vigente, sin reconstruir cargos antiguos indiscriminadamente.
 - Guardar en el cargo la cuota individual vigente al generar el período (`amountMinor`); cambiar la tarifa solo afecta cargos generados posteriormente. Se permite corregir un cargo vigente aún no pagado mediante una acción explícita de edición y confirmación (no automática).
+- Fase A: la corrección compara importe original/nuevo, revalida en una transacción que corresponda a `currentPeriod(today)` y no tenga pago activo, y rechaza confirmaciones obsoletas o sin cambio. No modifica tarifa, identidad/fechas del cargo ni pagos anulados. La conciliación no reemplaza cargos ya existentes. SQLite v2 no tiene bitácora de estas correcciones: no se promete auditoría completa del importe anterior.
 - Solo pagos COMPLETOS en el MVP; un cargo puede tener como máximo un pago vigente. Guardar fecha/hora del pago, importe exacto y nota opcional.
 - Permitir anular un pago registrado por error conservando un rastro (`voidedAt`) y devolviendo el cargo a pendiente.
 - No permitir crear cargos repetidos para un mismo `(clientId, periodKey)`.
@@ -52,6 +55,7 @@ El operador de una pequeña red local necesita gestionar desde UN teléfono Andr
 
 ### Ajustes y respaldo
 - Ajustar nombre del negocio, etiqueta de moneda, código telefónico por defecto (opcional), activar/desactivar avisos.
+- Fase A: ruta «Mi negocio» desde Ajustes. Nombre obligatorio de hasta 120 caracteres; moneda opcional de hasta 48, ambos sin controles/saltos internos y con trim exterior. Moneda vacía muestra solo el número; es un rótulo, sin conversiones ni cambios en dinero persistido. Prefijo opcional `+` seguido de 1–3 dígitos sin cero inicial: preferencia informativa, nunca completar automáticamente destinatarios WhatsApp. Guardar negocio omite las columnas de avisos/última copia. Estos límites son de entrada, no nuevas restricciones SQL ni alteraciones de respaldos existentes.
 - Exportar **copia completa** mediante Storage Access Framework. Archivo `.miredbk` formato 1: encabezado sin datos personales, sal/nonce nuevos, PBKDF2-HMAC-SHA256 (250000 iteraciones), AES-256-GCM con encabezado autenticado. Payload estructurado con las cinco tablas y todas sus columnas, metadatos y conteos; nunca copiar en caliente el SQLite abierto ni publicar JSON sin cifrar.
 - Incluye IP opcional (también NULL), MAC, IDs, importes enteros, fechas, auditoría y ajustes, incluido `notifications_enabled`. Formato de copia independiente de SQLite: formato 1 admite solo esquema 2 con todas las columnas presentes; archivos antiguos sin IP o versiones futuras se rechazan explícitamente. No hubo un formato de respaldo implementado antes de T07.
 - Restaurar: seleccionar, autenticar y validar completamente antes de mostrar fecha/versiones/conteos y diferencia frente a los datos actuales. Confirmación explícita «Reemplazar datos». Snapshot consistente previo en memoria y reemplazo en una sola transacción SQLite con FK activas, verificando integridad y filas; ante fallo, rollback íntegro. No se fusionan bases. SQLite conserva las páginas originales hasta confirmar; esa protección local no cuenta como copia externa.

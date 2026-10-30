@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:forui/forui.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/design_system/app_components.dart';
 import '../../core/design_system/app_design.dart';
@@ -68,7 +69,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const BackupSection(),
         const SizedBox(height: 16),
         const AppSection('Otros ajustes'),
-        const Text('La configuración del negocio aún no está disponible.'),
+        OutlinedButton.icon(
+          key: const Key('settings-business'),
+          onPressed: () => context.push('/settings/business'),
+          icon: const Icon(FLucideIcons.store, size: 18),
+          label: const Text('Mi negocio'),
+        ),
       ],
     ),
   );

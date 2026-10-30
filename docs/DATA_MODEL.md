@@ -33,6 +33,7 @@ En los esquemas v1 y v2, todos los instantes de auditoría se almacenan como INT
 - `collection_date` TEXT NOT NULL (último día o día 30 del mes anterior)
 - `suspension_candidate_date` TEXT NOT NULL (día 3 del período)
 - `amount_minor` INTEGER NOT NULL CHECK >= 0 (snapshot de tarifa)
+- Fase A permite una corrección explícita solo si es del período vigente, no tiene pago activo y sigue coincidiendo con el importe revisado al confirmar. Solo cambia `amount_minor`; se conservan identidad, fechas, tarifa del cliente y pagos anulados. v2 no almacena una bitácora de correcciones.
 - `created_at` NOT NULL
 - UNIQUE(`client_id`, `period_key`)
 
@@ -48,6 +49,7 @@ En los esquemas v1 y v2, todos los instantes de auditoría se almacenan como INT
 ## `app_settings`
 - Registro singleton `id=1`
 - `business_name`, `currency_label`, `default_calling_code`, `notifications_enabled`, `last_backup_at`, etc.
+- Fase A reutiliza las columnas existentes para «Mi negocio», sin migración: nombre obligatorio, etiqueta vacía permitida y prefijo opcional. Al editar negocio, `SettingsService.update` omite `notifications_enabled` si no recibe un valor; `last_backup_at` nunca forma parte de esa escritura. T07 conserva todas las columnas con sus valores exactos, incluso datos anteriores a los límites de entrada de Fase A.
 
 ## Lógica derivada y consultas
 - `chargeStatus(charge, today)`:

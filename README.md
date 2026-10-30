@@ -1,6 +1,8 @@
 # Mi Red
 
-App Flutter para Android y un único administrador de una red local. Están implementadas T01–T07: persistencia, clientes/dispositivos, **Cobros, pagos e historial**, **Inicio operativo**, WhatsApp/reportes, recordatorios locales y **copias cifradas con restauración completa**. Ajustes permite activar/probar avisos y crear/restaurar copias mediante el selector Android. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md), [informe T04](docs/T04_BILLING_UI_REPORT.md), [informe T05](docs/T05_DASHBOARD_REPORT.md), [informe T06](docs/T06_COMMUNICATIONS_REPORT.md) e [informe T07](docs/T07_BACKUP_RESTORE_REPORT.md).
+Desarrollado por **CoreX4Dev** · [https://corex4dev.com](https://corex4dev.com).
+
+App Flutter para Android y un único administrador de una red local. Están implementadas T01–T07: persistencia, clientes/dispositivos, **Cobros, pagos e historial**, **Inicio operativo**, WhatsApp/reportes, recordatorios locales y **copias cifradas con restauración completa**. La Fase A incorpora Mi negocio, corrección de cargo vigente impagado y recaudación en Inicio. Ajustes permite editar negocio, activar/probar avisos y crear/restaurar copias mediante el selector Android. Ver [persistencia T02](docs/T02_PERSISTENCE.md), [migración/IP T03.2](docs/T03_2_IP_DEVICES.md), [informe T04](docs/T04_BILLING_UI_REPORT.md), [informe T05](docs/T05_DASHBOARD_REPORT.md), [informe T06](docs/T06_COMMUNICATIONS_REPORT.md), [informe T07](docs/T07_BACKUP_RESTORE_REPORT.md) e [informe Fase A](docs/FINAL_PHASE_A_REPORT.md).
 
 **T03.3 — Sistema visual:** Forui 0.27.7, Inter local, iconos Lucide y paleta slate/teal compartida con los controles Material existentes. Navegación y tarjetas Forui, campos compactos, filtros contraíbles y copia explícita de IP. Tema según el sistema, sin bloquear el tamaño de texto. Se mantiene la edición Material para preservar foco/controladores; no ejecutar `forui init` sobre la app. Ver [decisiones, pruebas y capturas reales](docs/T03_3_DESIGN_SYSTEM_REPORT.md).
 
@@ -59,6 +61,16 @@ adb -s emulator-5554 shell am start -W -n com.mired.offline/.MainActivity
 ```
 
 No desinstalar ni borrar datos para aplicar una migración. Sustituir el ID por el dispositivo correspondiente. El fallo de arranque reportado en teléfono sigue sin diagnóstico: no hay teléfono físico conectado. Capturar `adb -s <id> logcat -d -b crash` y el resultado de `am start -W` para distinguir fallo de instalación, cierre del proceso y fallo de conexión del depurador.
+
+## Mi negocio, corrección de importes y recaudación (Fase A)
+
+En Ajustes → **Mi negocio** se editan nombre (1–120 caracteres), etiqueta de moneda (0–48) y prefijo opcional (`+` y 1–3 dígitos, sin cero inicial). Se recortan espacios exteriores; nombre/moneda deben ocupar una sola línea. La etiqueta vacía muestra solo el número, igual que antes. Cambiarla actualiza los rótulos en las vistas, confirmaciones y textos T06 sin convertir ni modificar cantidades. El prefijo es informativo: nunca se añade automáticamente a números locales para WhatsApp. Guardar estos campos conserva los avisos y la fecha de última copia. T07 ya los incluye y restaura.
+
+Desde Cobros → historial del cliente → mensualidad vigente sin pago activo → **Corregir importe**, introduce el nuevo importe con coma o punto decimal, revisa importe actual/nuevo y confirma. La operación verifica de nuevo período, ausencia de pago activo e importe original dentro de una transacción; una confirmación obsoleta se rechaza. No cambia la tarifa del cliente, fechas, estado del servicio ni pagos anulados. El esquema v2 no guarda una bitácora de correcciones; los pagos sí mantienen su auditoría. La conciliación conserva el importe corregido.
+
+Inicio muestra **Recaudado este período**: suma de pagos vigentes del período abierto que ya calcula Cobros. Excluye anulados y otros períodos, aunque el cliente tenga deuda anterior, esté archivado o haya cambiado su tarifa.
+
+La Fase A no incluye la reorganización de Ajustes, apariencia, identidad visual, splash o «Acerca de» de la Fase B. El alcance y la validación se detallan en [FINAL_PHASE_A_REPORT.md](docs/FINAL_PHASE_A_REPORT.md).
 
 ## Crear y recuperar copias
 
@@ -147,7 +159,7 @@ Crear primero esa carpeta fuera del proyecto. Guardar la clave y sus contraseña
 
 Fuente de verdad: [producto](docs/PRODUCT_SPEC.md), [modelo](docs/DATA_MODEL.md), [plan](docs/IMPLEMENTATION_PLAN.md) y [normas](AGENTS.md).
 
-T07 termina en respaldo cifrado/restauración completa y reconstrucción de avisos. **No se inicia T08** sin nueva instrucción. QA final/firma de distribución y validación en el teléfono objetivo siguen pendientes. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
+La Fase A cierra Mi negocio, corrección de cargo vigente impagado y recaudación en Inicio. La siguiente fase prevista es **B — Ajustes, apariencia, identidad, splash y Acerca de**, que requiere nueva instrucción. QA final/firma de distribución y validación en el teléfono objetivo siguen pendientes; no se inicia T08 en esta entrega. La guía [T02_PERSISTENCE.md](docs/T02_PERSISTENCE.md) conserva el contexto histórico de v1; la migración actual se describe en [T03_2_IP_DEVICES.md](docs/T03_2_IP_DEVICES.md).
 
 ## Resultado de validación T01 (27-10-2026)
 
@@ -201,3 +213,11 @@ En el AVD API 35 dedicado: actualización sin perder SQLite, permisos denegado/c
 En un AVD API35 exclusivo y con datos sintéticos, el archivo cifrado se guardó mediante SAF en Descargas y se abrió desde el selector para autenticar/restaurar. Cancelaciones, contraseña incorrecta y corrupción conservaron las cinco tablas. Reemplazar datos modificados y recuperar tras desinstalar/reinstalar restauró exactamente todas sus filas y campos, con integridad/FK correctas y 10 avisos reconstruidos usando permiso real. El documento externo sobrevivió a la desinstalación; no se publica su contraseña ni el archivo.
 
 El AVD mostró problemas de System UI/renderizado al reanudarse; la QA final usó temporalmente Skia mediante un extra de lanzamiento, sin cambiar el APK. Eso no acredita el arranque predeterminado ni el teléfono físico. El [informe T07](docs/T07_BACKUP_RESTORE_REPORT.md) incluye resultados, capturas y una sección **«Qué falta para terminar la aplicación»**: configuración del negocio, edición confirmada de cargo vigente impagado, recaudación en Inicio y validación/firma/guías finales de T08. Esos pendientes no se implementaron en T07.
+
+## Resultado de validación Fase A (30-10-2026)
+
+**271 pruebas aprobadas** (230 anteriores + 41 nuevas), formato de 89 archivos sin cambios y análisis limpio. Debug compiló en 59,7 s; Release en 147,9 s (63,8 MB), todavía sin firma de distribución. No cambia schema v2, dependencias, criptografía T07 ni configuración Android.
+
+El APK normal se instaló mediante `adb install -r` en el AVD sintético dedicado: SQLite conservó exactamente las cinco tablas y su archivo cerrado. Mi negocio persistió solo sus preferencias. La corrección explícita cambió un cargo vigente sin tocar tarifa/servicio/pagos previos; Inicio mostró la recaudación correcta al pagar y volvió a cero al anular. Hay capturas reales en ambos temas en el [informe de Fase A](docs/FINAL_PHASE_A_REPORT.md), junto con archivos, comandos y los pasos restantes de Fase B.
+
+El arranque predeterminado del AVD volvió a mostrar un ANR de System UI; la QA funcional utilizó el extra temporal de Skia sobre el mismo APK. El último reinicio con Skia conservó SQLite pero seguía en carga al capturar, con timeout de lanzamiento. Arranque fiable, teléfono físico y DDS/DevFS no se declaran solucionados. Fase B, QA final y firma quedan para nuevas instrucciones.

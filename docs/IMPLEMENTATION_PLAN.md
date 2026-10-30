@@ -40,6 +40,14 @@ Trabajar en secuencia; tras cada tarea detenerse y entregar un informe corto. Es
 - Comprobar que no dependa del sandbox privado. Avisar privacidad del archivo.
 - **Aceptación:** ciclo exportar/restaurar íntegro en Android real, incluido archivo corrupto, incompatibilidad y cancelación sin pérdida de datos.
 
+## Fases de cierre posteriores a T07
+
+Desarrollado por **CoreX4Dev** · [https://corex4dev.com](https://corex4dev.com).
+
+- **A — Cierre funcional:** Mi negocio (columnas existentes), corrección confirmada de cargo vigente impagado y recaudación del período en Inicio. Sin migración ni otro motor financiero; véase `FINAL_PHASE_A_REPORT.md`. Esta es la única fase autorizada en esta iteración.
+- **B — Ajustes, apariencia e identidad:** reorganización de Ajustes, apariencia, recursos de marca/splash y «Acerca de Mi Red» con atribución CoreX4Dev. Requiere nueva instrucción.
+- QA final y firma/distribución conservan los criterios T08 y requieren autorización posterior; la compilación Release sin firma no es una entrega distribuible. Fase A no acredita teléfono físico, DDS/DevFS ni solución de Impeller/Skia.
+
 ## T08 — QA y APK firmado (4–6 h)
 - Revisión de onboarding, permisos, transiciones, offline, rotación, reinstalación/restauración, actualización de APK.
 - Tests, compilación `flutter build apk --release`, firma y guardar keystore FUERA de Git.
