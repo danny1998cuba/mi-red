@@ -2,7 +2,7 @@
 
 El modelo documenta invariantes, no obliga a un nombre exacto de clase Dart. Elegir UUID (TEXT) o identificadores estables; todas las referencias deben tener FK e índices adecuados.
 
-En los esquemas v1 y v2, todos los instantes de auditoría se almacenan como INTEGER de milisegundos desde Unix epoch. Las fechas de calendario son TEXT `YYYY-MM-DD` locales y se calculan de forma independiente de esos instantes. La versión actual es v2 (T03.2); v1 fue la primera versión persistida y no se descarta.
+En los esquemas v1, v2 y v3, todos los instantes de auditoría se almacenan como INTEGER de milisegundos desde Unix epoch. Las fechas de calendario son TEXT `YYYY-MM-DD` locales y se calculan de forma independiente de esos instantes. La versión actual es v3 (tipo de dispositivo libre); v1 fue la primera versión persistida y no se descarta.
 
 ## `clients`
 - `id` TEXT PK
@@ -19,7 +19,7 @@ En los esquemas v1 y v2, todos los instantes de auditoría se almacenan como INT
 ## `devices`
 - `id` TEXT PK
 - `client_id` TEXT NOT NULL FK -> clients
-- `type` TEXT NOT NULL (`antenna`, `ont`, `router`, `other`)
+- `type` TEXT NOT NULL, sin CHECK de catálogo desde v3. La entrada de la app exige texto no vacío y recorta espacios exteriores. Se conservan los códigos históricos `antenna`, `ont`, `router`, `other` y se muestran con sus etiquetas españolas; los tipos nuevos se guardan como texto libre.
 - `mac_address` TEXT NULL (normalizar a AA:BB:CC:DD:EE:FF)
 - `notes` TEXT NULL
 - `ip_address` TEXT NULL **añadida en v2**: IPv4/IPv6 numérica opcional, validada localmente con `InternetAddress.tryParse`, recortada y normalizada desde sus bytes mediante `InternetAddress.fromRawAddress(...).address.toLowerCase()`. Vacío se guarda como NULL. No se permiten hostnames, puertos, CIDR, zonas, corchetes ni IPv4 abreviada/con ceros iniciales. No hace DNS ni abre sockets.
@@ -68,7 +68,9 @@ En los esquemas v1 y v2, todos los instantes de auditoría se almacenan como INT
 - Conservar `drift_schemas/drift_schema_v1.json` y `drift_schema_v2.json`; utilidades Drift de prueba en `test/generated_migrations/`. Véase `../T03_2_IP_DEVICES.md` para evidencia con registros v1, pagos/anulaciones y reaperturas.
 - Schema version incremental usando migraciones Drift, no `drop-and-recreate` en releases.
 - El archivo de backup tiene versión propia, separada del schema SQLite; validar antes de importar.
-- T07: `.miredbk` formato 1 contiene las cinco tablas de esquema 2, con columnas SQL explícitas e instantes INTEGER de milisegundos, sin convertirlos a texto o alterar sus valores. Incluye todas las IP y `notifications_enabled`; no incluye permisos ni cachés del SO. Formatos/esquemas anteriores sin IP y versiones futuras se rechazan, ya que no hubo respaldos implementados antes de T07. La autenticidad AES-GCM y la validación completa preceden al reemplazo transaccional.
+- T07: `.miredbk` formato 1 admite las cinco tablas de esquemas 2 y 3, con columnas SQL explícitas e instantes INTEGER de milisegundos, sin convertirlos a texto o alterar sus valores. Incluye todas las IP y `notifications_enabled`; no incluye permisos ni cachés del SO. Esquema 2 exige los cuatro tipos históricos; esquema 3 admite texto obligatorio libre. Nuevas exportaciones declaran esquema 3; las importaciones conservan exactamente las filas del esquema 2. Formatos/esquemas anteriores sin IP y versiones futuras se rechazan, ya que no hubo respaldos implementados antes de T07. La autenticidad AES-GCM y la validación completa preceden al reemplazo transaccional.
 - Exportar un snapshot consistente (transacción de lectura o mecanismo equivalente), NO copiar un archivo SQLite abierto ignorando WAL.
 - Al restaurar, validar todo el payload antes del reemplazo y aplicar en una sola transacción; no borrar datos actuales al fallar.
 - El contexto histórico de T03.2 no incluía respaldos. T07 conserva `devices.ip_address`, incluyendo NULL, sin modificar schemaVersion ni la migración v1→v2. La conciliación y los permisos reales se aplican separadamente después de restaurar.
+
+- Cambio posterior a Fase C: v1/v2 → v3 en una transacción. Desde v1 se añade primero IP; se reconstruye únicamente devices con TableMigration para retirar el CHECK del catálogo, conservando columnas, valores e índices. FK se desactivan fuera de la transacción para la reconstrucción y se reactivan en finally; foreign_key_check se verifica antes del commit. No hay conversión de tipos ni cambios financieros. Las instantáneas v1/v2 se conservan y se añade v3. Las apps antiguas rechazan copias nuevas de esquema 3; no se garantiza downgrade.

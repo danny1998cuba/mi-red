@@ -11,7 +11,6 @@ import '../billing/billing_calendar.dart';
 import 'client_providers.dart';
 import 'client_values.dart';
 import 'data/client_service.dart';
-import 'data/device_service.dart';
 import 'widgets/client_widgets.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
@@ -279,9 +278,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     Text(
-                                      deviceTypeLabel(
-                                        DeviceType.values.byName(device.type),
-                                      ),
+                                      deviceTypeLabel(device.type),
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleMedium,

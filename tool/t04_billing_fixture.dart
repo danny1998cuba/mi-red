@@ -102,7 +102,7 @@ Future<void> main() async {
     if ((await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
               'user_version',
             ) !=
-            2 ||
+            db.schemaVersion ||
         (await db.customSelect('PRAGMA foreign_key_check').get()).isNotEmpty ||
         (await db.customSelect('PRAGMA integrity_check').getSingle())
                 .read<String>('integrity_check') !=

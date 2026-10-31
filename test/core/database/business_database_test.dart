@@ -73,7 +73,7 @@ void main() {
         (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
           'user_version',
         ),
-        2,
+        3,
       );
       await expectLater(
         db.customStatement('INSERT INTO app_settings(id) VALUES (2)'),
@@ -477,23 +477,23 @@ void main() {
       final client = await create();
       final first = await devices.save(
         clientId: client.id,
-        type: DeviceType.antenna,
+        type: 'antenna',
         macAddress: '02-aa-bb-cc-dd-01',
       );
       expect(first.device.macAddress, '02:AA:BB:CC:DD:01');
       expect(first.hasDuplicateMac, isFalse);
       final duplicate = await devices.save(
         clientId: client.id,
-        type: DeviceType.router,
+        type: 'router',
         macAddress: '02aabbccdd01',
       );
       expect(duplicate.hasDuplicateMac, isTrue);
-      await devices.save(clientId: client.id, type: DeviceType.ont);
+      await devices.save(clientId: client.id, type: 'ont');
       expect((await devices.forClient(client.id)).length, 3);
       final edited = await devices.save(
         id: first.device.id,
         clientId: client.id,
-        type: DeviceType.other,
+        type: 'other',
         macAddress: '02:aa:bb:cc:dd:02',
         notes: 'Equipo de prueba',
       );
@@ -503,7 +503,7 @@ void main() {
       await expectLater(
         devices.save(
           clientId: client.id,
-          type: DeviceType.router,
+          type: 'router',
           macAddress: 'invalid',
         ),
         throwsArgumentError,
@@ -518,7 +518,7 @@ void main() {
       () async {
         final client = await create();
         await expectLater(
-          devices.save(clientId: 'missing', type: DeviceType.router),
+          devices.save(clientId: 'missing', type: 'router'),
           throwsA(isA<SqliteException>()),
         );
         await expectLater(
@@ -684,7 +684,7 @@ void main() {
             amountMinor: 10000,
             paidAt: audit,
           );
-          await devices.save(clientId: 'missing', type: DeviceType.router);
+          await devices.save(clientId: 'missing', type: 'router');
         }),
         throwsA(isA<SqliteException>()),
       );
@@ -795,8 +795,7 @@ void main() {
       )).single.charge;
       final payment = await PaymentService(disk)
           .register(chargeId: december.id, amountMinor: 12500, paidAt: audit);
-      await DeviceService(disk)
-          .save(clientId: client.id, type: DeviceType.router);
+      await DeviceService(disk).save(clientId: client.id, type: 'router');
       await SettingsService(disk).update(
         businessName: 'Negocio de prueba',
         currencyLabel: 'unidad',

@@ -78,3 +78,8 @@ T01 -> T02 -> T03 -> T04 -> T05 -> T06 -> T07 -> T08. En pruebas tempranas de T0
 - 35–55 horas, 7–12 jornadas enfocadas si Codex y el entorno funcionan bien.
 - Precio de amistad US$300 incluye APK, código, guía y una ronda de arreglos de bugs del alcance acordado.
 - No incluye integraciones con redes, mensajes automáticos, nube, ampliaciones ni nuevas funciones.
+
+## Cambio puntual posterior a Fase C — tipo de dispositivo libre
+- Formulario de texto en lugar del selector; SQLite v3 elimina únicamente el CHECK del catálogo de devices.type mediante migración v1/v2 → v3 que conserva los datos.
+- Formato cifrado 1 sin cambios criptográficos: importar esquemas 2 y 3; exportar esquema 3. Mantener la validación de columnas, integridad y restauración transaccional.
+- Aceptación: crear/editar tipos propios, conservar etiquetas históricas y datos financieros, migración/reapertura con datos y rollback, copia cifrada anterior importable y round trip de tipos nuevos.

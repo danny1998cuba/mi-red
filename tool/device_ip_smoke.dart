@@ -33,7 +33,7 @@ Future<void> main() async {
     late final Map<String, int> counts;
     try {
       final version = raw.select('PRAGMA user_version').single['user_version'];
-      if (version != (mode == 'write' ? 1 : 2)) {
+      if (version != (mode == 'write' ? 1 : 3)) {
         throw StateError('Unexpected version');
       }
       before = jsonEncode({
@@ -95,7 +95,7 @@ Future<void> main() async {
       await DeviceService(db).save(
         id: _deviceId,
         clientId: _clientId,
-        type: DeviceType.router,
+        type: 'router',
         macAddress: '02:00:00:03:02:01',
         ipAddress: const Value('192.0.2.32'),
         notes: 'Dispositivo sintético del smoke T03.2',

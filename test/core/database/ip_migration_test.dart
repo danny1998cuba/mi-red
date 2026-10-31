@@ -39,7 +39,7 @@ void main() {
   final verifier = SchemaVerifier(GeneratedHelper());
 
   test(
-    'v1 file migrates to v2, preserves every old value and reopens repeatedly',
+    'v1 file migrates to v3, preserves every old value and reopens repeatedly',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'mi_red_ip_migration_',
@@ -72,13 +72,13 @@ void main() {
         try {
           await verifier.migrateAndValidate(
             db,
-            2,
+            3,
             options: const ValidationOptions(validateDropped: true),
           );
           expect(
             (await db.customSelect('PRAGMA user_version').getSingle())
                 .read<int>('user_version'),
-            2,
+            3,
           );
           expect(
             (await db.customSelect('PRAGMA foreign_keys').getSingle())

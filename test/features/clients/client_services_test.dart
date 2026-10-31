@@ -82,7 +82,7 @@ void main() {
         expect(iterator.current!.fullName, 'Nombre actualizado');
         await devices.save(
           clientId: client.id,
-          type: DeviceType.router,
+          type: 'router',
           allowArchived: false,
         );
         expect(
@@ -185,10 +185,7 @@ void main() {
       'Archived clients are read-only in the UI-facing write methods',
       () async {
         final client = await create('archived');
-        final device = await devices.save(
-          clientId: client.id,
-          type: DeviceType.router,
-        );
+        final device = await devices.save(clientId: client.id, type: 'router');
         await clients.changeStatus(
           client.id,
           ServiceStatus.archived,
@@ -205,11 +202,7 @@ void main() {
           throwsStateError,
         );
         await expectLater(
-          devices.save(
-            clientId: client.id,
-            type: DeviceType.ont,
-            allowArchived: false,
-          ),
+          devices.save(clientId: client.id, type: 'ont', allowArchived: false),
           throwsStateError,
         );
         await expectLater(
@@ -231,13 +224,13 @@ void main() {
         );
         final first = await devices.save(
           clientId: client.id,
-          type: DeviceType.antenna,
+          type: 'antenna',
           macAddress: '02-aa-bb-cc-dd-01',
           allowArchived: false,
         );
         final second = await devices.save(
           clientId: client.id,
-          type: DeviceType.router,
+          type: 'router',
           macAddress: '02aabbccdd02',
           allowArchived: false,
         );
@@ -252,7 +245,7 @@ void main() {
         await devices.save(
           id: second.device.id,
           clientId: client.id,
-          type: DeviceType.other,
+          type: 'other',
           macAddress: '02:AA:BB:CC:DD:03',
           notes: 'Nota de prueba',
           allowArchived: false,

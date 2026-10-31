@@ -12,7 +12,6 @@ import 'package:mi_red/core/navigation/app_router.dart';
 import 'package:mi_red/features/billing/billing_calendar.dart';
 import 'package:mi_red/features/clients/client_providers.dart';
 import 'package:mi_red/features/clients/data/client_service.dart';
-import 'package:mi_red/features/clients/data/device_service.dart';
 
 Future<void> settleClientData(WidgetTester tester) async {
   for (var frame = 0; frame < 3; frame++) {
@@ -329,27 +328,54 @@ void main() {
                   .read(deviceServiceProvider)
                   .save(
                     clientId: client.id,
-                    type: DeviceType.antenna,
+                    type: 'antenna',
                     macAddress: '02aabbccdd01',
                   ))
               .device;
       final original = await db.select(db.charges).get();
       await open(tester, '/clients/${client.id}/devices/${device.id}/edit');
+      expect(
+        tester
+            .widget<TextFormField>(find.byKey(const Key('device-type')))
+            .controller!
+            .text,
+        'Antena',
+      );
       await fillClientField(tester, 'device-notes', 'Nota de prueba editada');
       await fillClientField(tester, 'device-mac', '02aabbccdd02');
-      await tester.tap(find.byKey(const Key('device-type')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Router').last);
-      await tester.pumpAndSettle();
+      await fillClientField(tester, 'device-type', 'Switch PoE 8 puertos');
       await pressClientControl(tester, 'device-save');
       await tester.tap(find.text('Guardar cambios'));
       await settleClientData(tester);
       final edited =
           (await container.read(deviceServiceProvider).forClient(client.id))
               .single;
-      expect(edited.type, 'router');
+      expect(edited.type, 'Switch PoE 8 puertos');
+      expect(find.text('Switch PoE 8 puertos'), findsOneWidget);
       expect(edited.macAddress, '02:AA:BB:CC:DD:02');
       expect(edited.notes, 'Nota de prueba editada');
+      await pressClientControl(tester, 'edit-device-${device.id}');
+      expect(
+        tester
+            .widget<TextFormField>(find.byKey(const Key('device-type')))
+            .controller!
+            .text,
+        edited.type,
+      );
+      await fillClientField(tester, 'device-type', '   ');
+      await pressClientControl(tester, 'device-save');
+      expect(
+        find.text('El tipo de dispositivo es obligatorio.'),
+        findsOneWidget,
+      );
+      expect(
+        (await container.read(deviceServiceProvider).forClient(client.id))
+            .single,
+        edited,
+      );
+      await fillClientField(tester, 'device-type', edited.type);
+      await tester.tap(find.byTooltip('Volver'));
+      await settleClientData(tester);
       await pressClientControl(tester, 'delete-device-${device.id}');
       await tester.tap(find.widgetWithText(FilledButton, 'Eliminar'));
       await settleClientData(tester);
@@ -457,6 +483,7 @@ void main() {
     (tester) async {
       final client = await seed('ip-ui');
       await open(tester, '/clients/${client.id}/devices/new');
+      await fillClientField(tester, 'device-type', '  Punto de acceso Wi-Fi  ');
       await fillClientField(tester, 'device-ip', 'cliente.local');
       await pressClientControl(tester, 'device-save');
       expect(
@@ -476,6 +503,8 @@ void main() {
           (await container.read(deviceServiceProvider).forClient(client.id))
               .single;
       expect(device.macAddress, isNull);
+      expect(device.type, 'Punto de acceso Wi-Fi');
+      expect(find.text('Punto de acceso Wi-Fi'), findsOneWidget);
       await pressClientControl(tester, 'edit-device-${device.id}');
       await showControl(tester, const Key('device-ip'));
       expect(
@@ -557,7 +586,7 @@ void main() {
                     .read(deviceServiceProvider)
                     .save(
                       clientId: client.id,
-                      type: DeviceType.router,
+                      type: 'router',
                       macAddress: '02aabbccdd10',
                     ))
                 .device;

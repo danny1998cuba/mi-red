@@ -400,7 +400,7 @@ class _BackupDialogState extends ConsumerState<_BackupDialog> {
                     if (_snapshot != null) ...[
                       const SizedBox(height: 16),
                       Text(
-                        'Copia autenticada · Formato 1 · Esquema 2\nCreada: ${paymentDateLabel(_snapshot!.createdAtUtc.millisecondsSinceEpoch)}',
+                        'Copia autenticada · Formato 1 · Esquema ${_snapshot!.sourceSchemaVersion}\nCreada: ${paymentDateLabel(_snapshot!.createdAtUtc.millisecondsSinceEpoch)}',
                       ),
                       const SizedBox(height: 12),
                       const Text('Contenido de la copia / datos actuales'),

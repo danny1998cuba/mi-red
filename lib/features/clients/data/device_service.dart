@@ -5,7 +5,13 @@ import 'package:drift/drift.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/record_id.dart';
 
-enum DeviceType { antenna, ont, router, other }
+String normalizeDeviceType(String value) {
+  final type = value.trim();
+  if (type.isEmpty) {
+    throw ArgumentError('El tipo de dispositivo es obligatorio.');
+  }
+  return type;
+}
 
 /// Parses numeric addresses locally; never resolves names or opens a socket.
 String? normalizeIpAddress(String? value) {
@@ -88,7 +94,7 @@ class DeviceService {
   Future<DeviceWriteResult> save({
     String? id,
     required String clientId,
-    required DeviceType type,
+    required String type,
     String? macAddress,
     Value<String?> ipAddress = const Value.absent(),
     String? notes,
@@ -116,7 +122,7 @@ class DeviceService {
     final data = DevicesCompanion.insert(
       id: deviceId,
       clientId: clientId,
-      type: type.name,
+      type: normalizeDeviceType(type),
       macAddress: Value(mac),
       ipAddress: ip,
       notes: Value(notes),

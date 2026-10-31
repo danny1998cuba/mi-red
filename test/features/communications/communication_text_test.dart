@@ -179,7 +179,7 @@ void main() {
     );
     await DeviceService(db).save(
       clientId: 'private-internal-id',
-      type: DeviceType.router,
+      type: 'router',
       macAddress: '02:00:00:00:06:01',
       ipAddress: const Value('192.0.2.6'),
       notes: 'Equipo sintético privado',

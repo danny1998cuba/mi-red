@@ -55,7 +55,11 @@ Future<void> main(List<String> arguments) async {
         'allTablesExceptLastBackupSha256': hex(stableHash.bytes),
       }),
     );
-    if (schema != 2 || integrity != 'ok' || foreignKeyErrors != 0) exitCode = 1;
+    if (!const [2, 3].contains(schema) ||
+        integrity != 'ok' ||
+        foreignKeyErrors != 0) {
+      exitCode = 1;
+    }
   } finally {
     db.close();
   }

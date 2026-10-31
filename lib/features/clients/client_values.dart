@@ -1,6 +1,5 @@
 import '../../core/database/app_database.dart';
 import 'data/client_service.dart';
-import 'data/device_service.dart';
 
 const maxAmountMinor = 9223372036854775807;
 
@@ -65,11 +64,12 @@ String serviceStatusLabel(String status) => switch (status) {
   _ => 'Estado desconocido',
 };
 
-String deviceTypeLabel(DeviceType type) => switch (type) {
-  DeviceType.antenna => 'Antena',
-  DeviceType.ont => 'ONT',
-  DeviceType.router => 'Router',
-  DeviceType.other => 'Otro',
+String deviceTypeLabel(String type) => switch (type) {
+  'antenna' => 'Antena',
+  'ont' => 'ONT',
+  'router' => 'Router',
+  'other' => 'Otro',
+  _ => type,
 };
 
 List<ClientRecord> filterClients(

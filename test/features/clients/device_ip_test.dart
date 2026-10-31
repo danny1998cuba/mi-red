@@ -82,7 +82,7 @@ void main() {
       final ipv4 = (await service.save(
         id: 'ipv4',
         clientId: client.id,
-        type: DeviceType.router,
+        type: 'router',
         ipAddress: const Value(' 192.168.1.20 '),
       )).device;
       expect(ipv4.macAddress, isNull);
@@ -90,7 +90,7 @@ void main() {
       final ipv6 = (await service.save(
         id: 'ipv6',
         clientId: client.id,
-        type: DeviceType.ont,
+        type: 'ont',
         macAddress: '02aabbccdd01',
         ipAddress: const Value('FE80::1'),
       )).device;
@@ -98,7 +98,7 @@ void main() {
       final noIp = (await service.save(
         id: 'empty',
         clientId: client.id,
-        type: DeviceType.other,
+        type: 'other',
         macAddress: '02aabbccdd02',
         ipAddress: const Value('  '),
       )).device;
@@ -113,13 +113,13 @@ void main() {
       await service.save(
         id: 'same-ip',
         clientId: otherClient.id,
-        type: DeviceType.antenna,
+        type: 'antenna',
         ipAddress: const Value('192.168.1.20'),
       );
       await service.save(
         id: ipv6.id,
         clientId: client.id,
-        type: DeviceType.router,
+        type: 'router',
         macAddress: '02aabbccdd03',
         notes: 'Nota editada sin parámetro IP',
       );
@@ -133,7 +133,7 @@ void main() {
         service.save(
           id: ipv4.id,
           clientId: client.id,
-          type: DeviceType.other,
+          type: 'other',
           ipAddress: const Value('cliente.local'),
         ),
         throwsArgumentError,
@@ -146,7 +146,7 @@ void main() {
       await service.save(
         id: ipv6.id,
         clientId: client.id,
-        type: DeviceType.router,
+        type: 'router',
         macAddress: '02aabbccdd03',
         ipAddress: const Value('10.0.0.5'),
       );
@@ -160,7 +160,7 @@ void main() {
       await service.save(
         id: ipv6.id,
         clientId: client.id,
-        type: DeviceType.router,
+        type: 'router',
         macAddress: edited.macAddress,
         notes: edited.notes,
         ipAddress: const Value(null),

@@ -92,9 +92,8 @@ class _DeviceEditorState extends ConsumerState<_DeviceEditor> {
   final _form = GlobalKey<FormState>();
   late final DeviceRecord? _initial = widget.device;
   late final _id = _initial?.id ?? newRecordId();
-  late DeviceType _type = _initial == null
-      ? DeviceType.antenna
-      : DeviceType.values.byName(_initial.type);
+  late final _initialTypeLabel = deviceTypeLabel(_initial?.type ?? 'antenna');
+  late final _type = TextEditingController(text: _initialTypeLabel);
   late final _mac = TextEditingController(text: _initial?.macAddress ?? '');
   late final _ip = TextEditingController(text: _initial?.ipAddress ?? '');
   late final _notes = TextEditingController(text: _initial?.notes ?? '');
@@ -107,9 +106,10 @@ class _DeviceEditorState extends ConsumerState<_DeviceEditor> {
       (_mac.text != (_initial?.macAddress ?? '') ||
           _ip.text != (_initial?.ipAddress ?? '') ||
           _notes.text != (_initial?.notes ?? '') ||
-          _type.name != (_initial?.type ?? 'antenna'));
+          _type.text != _initialTypeLabel);
   @override
   void dispose() {
+    _type.dispose();
     _mac.dispose();
     _ip.dispose();
     _notes.dispose();
@@ -155,7 +155,9 @@ class _DeviceEditorState extends ConsumerState<_DeviceEditor> {
       await service.save(
         id: _id,
         clientId: widget.clientId,
-        type: _type,
+        type: _initial != null && _type.text == _initialTypeLabel
+            ? _initial.type
+            : _type.text,
         macAddress: _mac.text,
         ipAddress: Value(_ip.text),
         notes: optionalText(_notes.text),
@@ -202,24 +204,19 @@ class _DeviceEditorState extends ConsumerState<_DeviceEditor> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DropdownButtonFormField<DeviceType>(
+            TextFormField(
               key: const Key('device-type'),
-              initialValue: _type,
-              isExpanded: true,
-              icon: const Icon(FLucideIcons.chevronDown, size: 18),
+              controller: _type,
+              enabled: !_saving,
+              textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.next,
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'El tipo de dispositivo es obligatorio.'
+                  : null,
               decoration: const InputDecoration(
                 labelText: 'Tipo de dispositivo',
+                hintText: 'Ej.: Antena, ONT, Router o Switch',
               ),
-              items: [
-                for (final type in DeviceType.values)
-                  DropdownMenuItem(
-                    value: type,
-                    child: Text(deviceTypeLabel(type)),
-                  ),
-              ],
-              onChanged: _saving
-                  ? null
-                  : (value) => setState(() => _type = value!),
             ),
             const SizedBox(height: 12),
             TextFormField(

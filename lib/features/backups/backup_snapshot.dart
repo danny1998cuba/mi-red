@@ -16,7 +16,7 @@ class BackupException implements Exception {
   String toString() => message;
 }
 
-// Explicit v2 column allowlist: neither SQL nor column names come from a file.
+// Explicit v2/v3 column allowlist: neither SQL nor column names come from a file.
 const backupColumns = <String, List<String>>{
   'clients': [
     'id',
@@ -60,7 +60,8 @@ const backupColumns = <String, List<String>>{
 };
 
 class BackupSnapshot {
-  BackupSnapshot._(this.createdAtUtc, this.records);
+  BackupSnapshot._(this.createdAtUtc, this.records, this.sourceSchemaVersion);
+  final int sourceSchemaVersion;
   final DateTime createdAtUtc;
   final Map<String, List<Map<String, Object?>>> records;
   Map<String, int> get counts => {
@@ -73,7 +74,7 @@ class BackupSnapshot {
   }) => BackupSnapshot.fromJson({
     'format': 'mi-red-backup',
     'backupFormatVersion': backupFormatVersion,
-    'sourceSchemaVersion': 2,
+    'sourceSchemaVersion': 3,
     'createdAtUtc': createdAt.toUtc().toIso8601String(),
     'appIdentifier': backupAppIdentifier,
     'counts': {
@@ -112,9 +113,9 @@ class BackupSnapshot {
           root['format'] != 'mi-red-backup' ||
           root['appIdentifier'] != backupAppIdentifier ||
           root['backupFormatVersion'] != backupFormatVersion ||
-          root['sourceSchemaVersion'] != 2) {
+          !const [2, 3].contains(root['sourceSchemaVersion'])) {
         throw const BackupException(
-          'Formato, aplicación o versión de copia incompatible. Se requiere formato 1 y esquema 2.',
+          'Formato, aplicación o versión de copia incompatible. Se requiere formato 1 y esquema 2 o 3.',
         );
       }
       final createdText = root['createdAtUtc'];
@@ -165,8 +166,12 @@ class BackupSnapshot {
         result.sort((a, b) => a['id'].toString().compareTo(b['id'].toString()));
         records[table.key] = List.unmodifiable(result);
       }
-      _validateRows(records);
-      return BackupSnapshot._(created, Map.unmodifiable(records));
+      _validateRows(records, root['sourceSchemaVersion'] as int);
+      return BackupSnapshot._(
+        created,
+        Map.unmodifiable(records),
+        root['sourceSchemaVersion'] as int,
+      );
     } on BackupException {
       rethrow;
     } catch (_) {
@@ -177,7 +182,7 @@ class BackupSnapshot {
   Map<String, Object?> toJson() => {
     'format': 'mi-red-backup',
     'backupFormatVersion': backupFormatVersion,
-    'sourceSchemaVersion': 2,
+    'sourceSchemaVersion': sourceSchemaVersion,
     'createdAtUtc': createdAtUtc.toIso8601String(),
     'appIdentifier': backupAppIdentifier,
     'counts': counts,
@@ -241,7 +246,7 @@ void _instant(Object? value, {bool nullable = false}) {
   }
 }
 
-void _validateRows(Map<String, List<Map<String, Object?>>> tables) {
+void _validateRows(Map<String, List<Map<String, Object?>>> tables, int schema) {
   final clients = {for (final row in tables['clients']!) row['id']: row};
   final charges = {for (final row in tables['charges']!) row['id']: row};
   for (final row in clients.values) {
@@ -261,9 +266,16 @@ void _validateRows(Map<String, List<Map<String, Object?>>> tables) {
   }
   for (final row in tables['devices']!) {
     if (!clients.containsKey(row['client_id']) ||
-        !const ['antenna', 'ont', 'router', 'other'].contains(row['type'])) {
+        (schema == 2 &&
+            !const [
+              'antenna',
+              'ont',
+              'router',
+              'other',
+            ].contains(row['type']))) {
       _invalid();
     }
+    _text(row['type'], required: true);
     _text(row['mac_address']);
     _text(row['ip_address']);
     _text(row['notes']);

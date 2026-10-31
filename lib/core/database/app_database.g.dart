@@ -713,7 +713,7 @@ class Devices extends Table with TableInfo<Devices, DeviceRecord> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    $customConstraints: 'NOT NULL CHECK (type IN (\'antenna\', \'ont\', \'router\', \'other\'))',
+    $customConstraints: 'NOT NULL',
   );
   static const VerificationMeta _macAddressMeta = const VerificationMeta(
     'macAddress',

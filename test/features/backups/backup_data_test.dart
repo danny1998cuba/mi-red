@@ -28,6 +28,44 @@ void main() {
   Future<String> fingerprint() async =>
       jsonEncode((await service.capture(backupTestDate)).records);
 
+  test('format 1 schema 2 encrypted backup imports with all historical values unchanged', () async {
+    final legacyJson = syntheticBackup().toJson()..['sourceSchemaVersion'] = 2;
+    final legacy = BackupSnapshot.fromJson(legacyJson);
+    final cipher = AuthenticatedBackupCipher();
+    const password = 'Clave sintética anterior 2026';
+    final bytes = await cipher.encrypt(legacy, password);
+    final imported = await cipher.decrypt(bytes, password);
+    expect(imported.sourceSchemaVersion, 2);
+    expect(imported.toJson(), legacyJson);
+    await service.restore(imported);
+    final captured = await service.capture(backupTestDate);
+    expect(captured.sourceSchemaVersion, 3);
+    expect(captured.records, legacy.records);
+    expect(
+      (await db.customSelect('PRAGMA user_version').getSingle())
+          .data
+          .values
+          .single,
+      3,
+    );
+  });
+
+  test(
+    'schema 3 free device types survive encryption, restore and re-export',
+    () async {
+      final json = jsonDecode(
+        jsonEncode(syntheticBackup().toJson()),
+      ) as Map<String, dynamic>;
+      json['records']['devices'][0]['type'] = 'Switch PoE · 8 puertos';
+      final custom = BackupSnapshot.fromJson(json);
+      final cipher = AuthenticatedBackupCipher();
+      const password = 'Clave sintética equipos nuevos';
+      final bytes = await cipher.encrypt(custom, password);
+      await service.restore(await cipher.decrypt(bytes, password));
+      expect((await service.capture(backupTestDate)).toJson(), custom.toJson());
+    },
+  );
+
   test('consistent five-table snapshot retains every exact raw column, integer, ID and nullable IP', () async {
     final fixture = syntheticBackup();
     await insertSyntheticBackup(db, fixture);
@@ -121,7 +159,7 @@ void main() {
           .data
           .values
           .single,
-      2,
+      3,
     );
     await db.close();
     await dir.delete(recursive: true);
@@ -168,7 +206,15 @@ void main() {
   final corruptions = <String, void Function(Map<String, dynamic>)>{
     'future format': (j) => j['backupFormatVersion'] = 99,
     'floating format': (j) => j['backupFormatVersion'] = 1.0,
-    'future schema': (j) => j['sourceSchemaVersion'] = 3,
+    'future schema': (j) => j['sourceSchemaVersion'] = 4,
+    'floating schema': (j) => j['sourceSchemaVersion'] = 3.0,
+    'empty device type': (j) => j['records']['devices'][0]['type'] = '  ',
+    'null device type': (j) => j['records']['devices'][0]['type'] = null,
+    'non-text device type': (j) => j['records']['devices'][0]['type'] = 42,
+    'custom type mislabeled schema 2': (j) {
+      j['sourceSchemaVersion'] = 2;
+      j['records']['devices'][0]['type'] = 'Switch';
+    },
     'legacy missing IP': (j) => j['records']['devices'][0].remove('ip_address'),
     'different app': (j) => j['appIdentifier'] = 'another.app',
     'broken foreign key': (j) =>

@@ -23,7 +23,7 @@ CREATE INDEX clients_status ON clients(status);
 CREATE TABLE devices (
   id TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0),
   client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
-  type TEXT NOT NULL CHECK (type IN ('antenna', 'ont', 'router', 'other')),
+  type TEXT NOT NULL,
   mac_address TEXT CHECK (mac_address IS NULL OR mac_address GLOB
     '[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]'),
   notes TEXT,
