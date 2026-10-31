@@ -49,6 +49,6 @@ External communication features, such as WhatsApp, may require an internet conne
 
 Developed by **[CoreX4Dev](https://corex4dev.com)**.
 
-**Version:** 1.0.0
+**Version:** 1.0.1 (Android build 2)
 
 © 2026 CoreX4Dev.
