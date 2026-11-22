@@ -1,6 +1,6 @@
 # Manual de usuario
 
-**Mi Red 1.0 · Guía para administrar clientes y cobros desde Android**
+**Mi Red 1.1 · Guía para administrar clientes y cobros desde Android**
 
 Esta guía está dirigida a la persona que administra una pequeña red local. No hace falta saber programar ni tener conocimientos técnicos avanzados. Los ejemplos de las capturas usan **datos ficticios**.
 
@@ -120,6 +120,16 @@ El resumen superior corresponde a **todo el período**; los filtros modifican la
 5. Comprueba que aparece **Pagado** y que se actualizan las cifras en Inicio.
 
 Mi Red registra **pagos completos**. No admite abonos parciales ni pagos electrónicos dentro de la aplicación.
+
+### Registrar de 1 a 12 mensualidades
+
+1. Pulsa **Registrar pago** y elige entre 1 y 12 mensualidades. La opción inicial es 1. También puedes empezar desde el historial si el período vigente ya está pagado.
+2. Desplaza la vista para revisar los períodos, sus importes, el total y la próxima mensualidad pendiente. Mi Red toma primero los cargos impagados más antiguos, salta los pagados y completa con las próximas mensualidades si hace falta. **Anticipo** identifica un pago anterior al inicio del cobro del período.
+3. Pulsa **Confirmar pago**. Si cambian los cobros, se actualiza la vista previa y se pide confirmar de nuevo.
+
+En el historial puedes cambiar el **Período seleccionado**. Los próximos meses aparecen del más cercano al más lejano y los anteriores del más reciente al más antiguo. **Ver operaciones** muestra los pagos individuales y agrupados por fecha de registro.
+
+Abre **Ver detalle del grupo** para ver el importe original, vigente y anulado. Pulsa **Anular esta mensualidad** junto al miembro que quieras corregir, o usa la acción del grupo para anular todos los pagos todavía vigentes. Revisa los períodos e importes y confirma. La anulación corrige el registro y no devuelve dinero. El cargo vuelve a estar pendiente y conserva el historial.
 
 ### Anular un pago por error
 

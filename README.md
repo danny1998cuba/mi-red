@@ -11,7 +11,7 @@ Designed with simplicity and usability in mind, Mi Red combines a modern interfa
 - **Customer management:** Create, edit, search, archive, and reactivate customers.
 - **Network devices:** Manage customer equipment with free-text device types, MAC addresses and IPv4/IPv6 information.
 - **Monthly billing:** Track billing periods, individual customer fees, outstanding charges, and payment history.
-- **Payment management:** Register payments, void transactions, and correct eligible outstanding charges.
+- **Payment management:** Register full payments for 1–12 months, void a grouped member or the remaining group, and correct eligible outstanding charges.
 - **Dashboard:** Monitor active customers, collections, outstanding balances, and accounts requiring attention.
 - **WhatsApp integration:** Prepare individual payment reminders and share billing reports.
 - **Local notifications:** Optional reminders for outstanding payments and potential service suspensions.
@@ -35,7 +35,7 @@ Mi Red does not require an account, external database, cloud service, or backend
 
 Application data is stored locally. Users are responsible for keeping their encrypted backups and passwords safe.
 
-SQLite schema 3 supports free-text device types and migrates existing schema 1/2 databases without changing their records. The encrypted `.miredbk` format remains version 1: this app imports schema 2 and 3 backups, and exports schema 3. Older app versions cannot import new schema 3 backups. See [device type change report](docs/DEVICE_TYPE_TEXT_REPORT.md).
+SQLite schema 5 expands payment groups and migrates earlier databases. Encrypted `.miredbk` files use format 1. T09.1 imports backups from schemas 2–5 and exports schema 5.
 
 External communication features, such as WhatsApp, may require an internet connection.
 
@@ -49,6 +49,6 @@ External communication features, such as WhatsApp, may require an internet conne
 
 Developed by **[CoreX4Dev](https://corex4dev.com)**.
 
-**Version:** 1.0.1 (Android build 2)
+**Version:** 1.1.0 (Android build 3)
 
 © 2026 CoreX4Dev.

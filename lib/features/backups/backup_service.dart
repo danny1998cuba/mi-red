@@ -67,10 +67,12 @@ class BackupService {
   Future<void> restore(BackupSnapshot snapshot) async {
     // Revalidate the immutable import before the first DELETE.
     final checked = BackupSnapshot.fromJson(snapshot.toJson());
+    final replacement = checked.currentRecords;
     await db.transaction(() async {
       // Consistent pre-replacement in-memory copy; SQLite itself retains the old pages until commit.
       await _capture(snapshot.createdAtUtc);
       await db.delete(db.payments).go();
+      await db.delete(db.paymentBatches).go();
       await db.delete(db.devices).go();
       await db.delete(db.charges).go();
       await db.delete(db.clients).go();
@@ -78,7 +80,7 @@ class BackupService {
       for (final table in backupColumns.entries) {
         final columns = table.value;
         await db.batch((batch) {
-          for (final row in checked.records[table.key]!) {
+          for (final row in replacement[table.key]!) {
             batch.customStatement(
               'INSERT INTO ${table.key} (${columns.join(',')}) VALUES (${List.filled(columns.length, '?').join(',')})',
               columns.map((column) => row[column]).toList(),
@@ -89,7 +91,7 @@ class BackupService {
       }
       await _checkIntegrity();
       final actual = await _capture(checked.createdAtUtc);
-      if (jsonEncode(actual.records) != jsonEncode(checked.records)) {
+      if (jsonEncode(actual.records) != jsonEncode(replacement)) {
         throw const BackupException(
           'La verificación final no coincide. Se conserva la base anterior.',
         );

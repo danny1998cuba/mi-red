@@ -1,6 +1,6 @@
 # Mi Red — Guía rápida
 
-**Tu referencia diaria para clientes, cobros y respaldos · v1.0**
+**Tu referencia diaria para clientes, cobros y respaldos · v1.1**
 
 ## Empieza en cinco minutos
 
@@ -26,6 +26,8 @@
 |---|---|
 | Añadir un cliente | **Inicio → Añadir cliente** o **Clientes → Añadir** |
 | Registrar un pago | **Cobros → Cliente → Registrar pago** |
+| Pagar de 1 a 12 mensualidades | **Registrar pago → Cantidad de mensualidades → Confirmar pago** |
+| Anular un miembro o los restantes | **Historial → Ver operaciones → Ver detalle del grupo** |
 | Consultar una deuda anterior | **Clientes → Ficha → Cobros e historial** |
 | Enviar recordatorio | **Historial → Mensualidad impagada → Recordar por WhatsApp** |
 | Compartir listado | **Cobros → Compartir listado → Vista previa → Compartir** |

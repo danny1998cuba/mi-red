@@ -81,6 +81,7 @@ void main() {
     String? name,
     int fee = 12550,
     LocalDate? start,
+    ServiceStatus status = ServiceStatus.active,
   }) => container
       .read(clientServiceProvider)
       .create(
@@ -89,6 +90,7 @@ void main() {
         monthlyFeeMinor: fee,
         today: start ?? LocalDate.fromDateTime(now),
         recordedAt: now,
+        status: status,
       );
   Future<void> open(WidgetTester tester, [String path = '/billing']) async {
     container.read(appRouterProvider).go(path);
@@ -107,6 +109,292 @@ void main() {
     await pumpBilling(tester);
     await pressBilling(tester, 'billing-filters');
   }
+
+  Future<void> chooseMonths(WidgetTester tester, int count) async {
+    await pressBilling(tester, 'payment-month-count');
+    final dialog = find.byType(SimpleDialog);
+    final option = find.descendant(
+      of: dialog,
+      matching: find.text('$count mensualidades'),
+    );
+    await tester.scrollUntilVisible(
+      option,
+      120,
+      scrollable: find.descendant(
+        of: dialog,
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.ensureVisible(option);
+    await tester.pumpAndSettle();
+    await tester.tap(option);
+    await pumpBilling(tester);
+  }
+
+  testWidgets(
+    'P21/P22 reviews two months at 200% in dark mode and voids through group history',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+      now = DateTime(2026, 11, 22, 12);
+      await seed('group', fee: 1500);
+      await open(tester);
+      await pressBilling(tester, 'pay-group:2026-11');
+      expect(find.text('1 mensualidad'), findsOneWidget);
+      await chooseMonths(tester, 2);
+      expect(find.byKey(const Key('review-month-2026-11')), findsOneWidget);
+      expect(find.byKey(const Key('review-month-2026-12')), findsOneWidget);
+      expect(find.text('Anticipo'), findsOneWidget);
+      expect(find.textContaining('Total: 30,00'), findsOneWidget);
+      expect(await db.select(db.charges).get(), hasLength(1));
+      await pressBilling(tester, 'confirm-payment');
+      final payments = container.read(paymentServiceProvider);
+      final group = (await payments.batchesForClient('group')).single;
+      expect(group.payments, hasLength(2));
+      container.read(appRouterProvider).go('/billing/clients/group');
+      await pumpBilling(tester);
+      await pressBilling(tester, 'show-billing-operations');
+      await pressBilling(tester, 'group-detail-${group.batch.id}');
+      await pressBilling(tester, 'void-payment-batch');
+      expect(find.text('Confirmar anulación'), findsOneWidget);
+      expect(find.textContaining('Importe a anular: 30,00'), findsOneWidget);
+      await pressBilling(tester, 'confirm-void-batch');
+      expect(
+        (await payments.batchesForClient('group')).single.batch.voidedAt,
+        isNotNull,
+      );
+      expect(
+        find.byKey(ValueKey('void-${group.payments.first.payment.id}')),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'P15 grouped payment warns for suspended service and hides the entry for archived clients',
+    (tester) async {
+      await seed('held', status: ServiceStatus.suspended);
+      await seed('archived-group', status: ServiceStatus.archived);
+      await open(tester, '/billing/clients/held');
+      await pressBilling(tester, 'pay-months');
+      await chooseMonths(tester, 2);
+      expect(
+        find.text('El servicio está suspendido. El cobro mantiene ese estado.'),
+        findsOneWidget,
+      );
+      await pressBilling(tester, 'confirm-payment');
+      expect(
+        (await container.read(clientServiceProvider).get('held')).status,
+        'suspended',
+      );
+      container.read(appRouterProvider).go('/billing/clients/archived-group');
+      await pumpBilling(tester);
+      expect(find.text('Servicio: archivado'), findsOneWidget);
+      expect(find.byKey(const Key('pay-months')), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'T09.1 320 dp and 200% review twelve, confirm and void one member',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      now = DateTime(2026, 11, 22, 12);
+      await seed('dozen', fee: 1500);
+      await open(tester, '/billing/clients/dozen?period=2026-11');
+      await pressBilling(tester, 'pay-dozen:2026-11');
+      await chooseMonths(tester, 12);
+      expect(find.text('Total: 180,00'), findsOneWidget);
+      await reachBillingControl(tester, const Key('review-month-2027-10'));
+      expect(
+        find.text('Próxima mensualidad pendiente: Noviembre 2027.'),
+        findsOneWidget,
+      );
+      await pressBilling(tester, 'confirm-payment');
+      await pressBilling(tester, 'show-billing-operations');
+      final service = container.read(paymentServiceProvider);
+      final group = (await service.batchesForClient('dozen')).single;
+      await pressBilling(tester, 'group-detail-${group.batch.id}');
+      await pressBilling(tester, 'void-member-${group.payments[1].payment.id}');
+      expect(find.text('Diciembre 2026 · 15,00'), findsOneWidget);
+      expect(find.text('Importe a anular: 15,00'), findsOneWidget);
+      await pressBilling(tester, 'confirm-void-batch');
+      expect(
+        (await service.batchesForClient('dozen')).single.active,
+        hasLength(11),
+      );
+      expect(find.text('Parcialmente anulado'), findsWidgets);
+      expect(find.text('Importe vigente: 165,00 · 11 vigentes'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'T09.1 stale review refreshes the total and requires another confirmation',
+    (tester) async {
+      now = DateTime(2026, 11, 22, 12);
+      await seed('stale', fee: 1500);
+      await open(tester);
+      await pressBilling(tester, 'pay-stale:2026-11');
+      await chooseMonths(tester, 2);
+      expect(find.text('Total: 30,00'), findsOneWidget);
+      await container
+          .read(billingServiceProvider)
+          .correctChargeAmount(
+            chargeId: 'stale:2026-11',
+            expectedAmountMinor: 1500,
+            amountMinor: 1200,
+            today: LocalDate.fromDateTime(now),
+          );
+      await pressBilling(tester, 'confirm-payment');
+      expect(find.text('Total: 27,00'), findsOneWidget);
+      expect(
+        find.textContaining('Revisa la selección actualizada'),
+        findsOneWidget,
+      );
+      expect(await db.select(db.payments).get(), isEmpty);
+      await pressBilling(tester, 'confirm-payment');
+      expect(
+        (await db.select(db.paymentBatches).get()).single.totalMinor,
+        2700,
+      );
+    },
+  );
+
+  testWidgets(
+    'T09.1 changing selected period recomposes monthly sections without writes',
+    (tester) async {
+      now = DateTime(2026, 11, 22, 12);
+      await seed('order', start: LocalDate(2026, 8, 12));
+      final service = container.read(paymentServiceProvider);
+      final quote = await service.previewBatch('order', now, count: 7);
+      await service.registerBatch(quote, paidAt: now);
+      final before = await db.select(db.charges).get();
+      await open(tester, '/billing/clients/order?period=2026-11');
+
+      Future<double> position(String period) async {
+        final key = Key('history-month-$period');
+        await reachBillingControl(tester, key);
+        final scroll = tester.state<ScrollableState>(
+          find.byType(Scrollable).first,
+        );
+        return scroll.position.pixels + tester.getTopLeft(find.byKey(key)).dy;
+      }
+
+      Future<void> order(List<String> chronological) async {
+        var prior = -1e9;
+        for (final key in chronological) {
+          final offset = await position(key);
+          expect(offset, greaterThan(prior), reason: key);
+          prior = offset;
+        }
+      }
+
+      await order([
+        '2026-11',
+        '2026-12',
+        '2027-01',
+        '2027-02',
+        '2026-10',
+        '2026-09',
+        '2026-08',
+      ]);
+      await pressBilling(tester, 'client-history-period');
+      await tester.tap(find.text('Enero 2027').last);
+      await pumpBilling(tester);
+      await order([
+        '2027-01',
+        '2027-02',
+        '2026-12',
+        '2026-11',
+        '2026-10',
+        '2026-09',
+        '2026-08',
+      ]);
+      await pressBilling(tester, 'client-history-period');
+      await tester.tap(find.text('Octubre 2026').last);
+      await pumpBilling(tester);
+      await order([
+        '2026-10',
+        '2026-11',
+        '2026-12',
+        '2027-01',
+        '2027-02',
+        '2026-09',
+        '2026-08',
+      ]);
+      expect(await db.select(db.charges).get(), before);
+      expect(await db.select(db.payments).get(), hasLength(7));
+    },
+  );
+
+  testWidgets(
+    'T09.1 operations follow recording time and return to the selected month',
+    (tester) async {
+      now = DateTime(2026, 11, 22, 12);
+      await seed('operations');
+      final service = container.read(paymentServiceProvider);
+      final old = await service.previewBatch('operations', now, count: 4);
+      await service.registerBatch(old, paidAt: now);
+      final original = (await service.batchesForClient('operations')).single;
+      now = now.add(const Duration(minutes: 30));
+      for (final row in original.payments.take(2)) {
+        await service.voidPayment(
+          row.payment.id,
+          voidedAt: now,
+          expectedBatchId: old.id,
+          expectedClientId: 'operations',
+        );
+      }
+      final latest = await service.previewBatch('operations', now, count: 2);
+      await service.registerBatch(latest, paidAt: now);
+      await open(tester, '/billing/clients/operations?period=2027-01');
+      await pressBilling(tester, 'show-billing-operations');
+      Future<double> offset(String id) async {
+        final key = Key('operation-$id');
+        await reachBillingControl(tester, key);
+        return tester
+                .state<ScrollableState>(find.byType(Scrollable).first)
+                .position
+                .pixels +
+            tester.getTopLeft(find.byKey(key)).dy;
+      }
+
+      expect(await offset(latest.id), lessThan(await offset(old.id)));
+      await pressBilling(tester, 'group-detail-${old.id}');
+      final rows = original.payments
+          .map((row) => find.byKey(ValueKey('batch-member-${row.payment.id}')))
+          .toList();
+      for (var i = 1; i < rows.length; i++) {
+        expect(
+          tester.getTopLeft(rows[i]).dy,
+          greaterThan(tester.getTopLeft(rows[i - 1]).dy),
+        );
+      }
+      await tester.tap(find.text('Cerrar'));
+      await pumpBilling(tester);
+      await pressBilling(tester, 'show-billing-operations');
+      expect(
+        tester
+            .widget<DropdownButton<String>>(
+              find.byKey(const Key('client-history-period')),
+            )
+            .value,
+        '2027-01',
+      );
+    },
+  );
 
   testWidgets(
     'Period controls load real charges, previous empty month and idempotent repeated entries',
@@ -267,6 +555,7 @@ void main() {
       await reachBillingControl(tester, Key('pay-${client.id}:2026-12'));
       expect(find.text('Pago anulado'), findsOneWidget);
       expect(find.text('Nota: Nota histórica'), findsOneWidget);
+      await reachBillingControl(tester, const Key('payment-history-status'));
       expect(find.text('Sin pagos vigentes'), findsOneWidget);
       await tester.tap(find.byTooltip('Atrás'));
       await pumpBilling(tester);

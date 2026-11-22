@@ -16,8 +16,8 @@ class BackupException implements Exception {
   String toString() => message;
 }
 
-// Explicit v2/v3 column allowlist: neither SQL nor column names come from a file.
-const backupColumns = <String, List<String>>{
+// Column names and insertion order come from this allowlist, never the file.
+const _commonColumns = <String, List<String>>{
   'clients': [
     'id',
     'full_name',
@@ -41,14 +41,6 @@ const backupColumns = <String, List<String>>{
     'amount_minor',
     'created_at',
   ],
-  'payments': [
-    'id',
-    'charge_id',
-    'amount_minor',
-    'paid_at',
-    'note',
-    'voided_at',
-  ],
   'app_settings': [
     'id',
     'business_name',
@@ -59,11 +51,40 @@ const backupColumns = <String, List<String>>{
   ],
 };
 
+const _legacyPayments = [
+  'id',
+  'charge_id',
+  'amount_minor',
+  'paid_at',
+  'note',
+  'voided_at',
+];
+const legacyBackupColumns = {..._commonColumns, 'payments': _legacyPayments};
+
+const backupColumns = <String, List<String>>{
+  ..._commonColumns,
+  'payment_batches': ['id', 'client_id', 'paid_at', 'total_minor', 'voided_at'],
+  'payments': [..._legacyPayments, 'batch_id'],
+};
+
 class BackupSnapshot {
   BackupSnapshot._(this.createdAtUtc, this.records, this.sourceSchemaVersion);
   final int sourceSchemaVersion;
   final DateTime createdAtUtc;
   final Map<String, List<Map<String, Object?>>> records;
+  Map<String, List<Map<String, Object?>>> get currentRecords =>
+      sourceSchemaVersion >= 4
+      ? records
+      : {
+          for (final table in backupColumns.keys)
+            table: switch (table) {
+              'payment_batches' => const [],
+              'payments' => [
+                for (final row in records[table]!) {...row, 'batch_id': null},
+              ],
+              _ => records[table]!,
+            },
+        };
   Map<String, int> get counts => {
     for (final entry in records.entries) entry.key: entry.value.length,
   };
@@ -74,7 +95,7 @@ class BackupSnapshot {
   }) => BackupSnapshot.fromJson({
     'format': 'mi-red-backup',
     'backupFormatVersion': backupFormatVersion,
-    'sourceSchemaVersion': 3,
+    'sourceSchemaVersion': 5,
     'createdAtUtc': createdAt.toUtc().toIso8601String(),
     'appIdentifier': backupAppIdentifier,
     'counts': {
@@ -108,14 +129,15 @@ class BackupSnapshot {
         'counts',
         'records',
       ]);
+      final schema = root['sourceSchemaVersion'];
       if (root['backupFormatVersion'] is! int ||
-          root['sourceSchemaVersion'] is! int ||
+          schema is! int ||
           root['format'] != 'mi-red-backup' ||
           root['appIdentifier'] != backupAppIdentifier ||
           root['backupFormatVersion'] != backupFormatVersion ||
-          !const [2, 3].contains(root['sourceSchemaVersion'])) {
+          !const [2, 3, 4, 5].contains(schema)) {
         throw const BackupException(
-          'Formato, aplicación o versión de copia incompatible. Se requiere formato 1 y esquema 2 o 3.',
+          'Formato, aplicación o versión de copia incompatible. Se requiere formato 1 y esquema del 2 al 5.',
         );
       }
       final createdText = root['createdAtUtc'];
@@ -129,11 +151,12 @@ class BackupSnapshot {
       }
       final rawRecords = _map(root['records']);
       final rawCounts = _map(root['counts']);
-      _keys(rawRecords, backupColumns.keys);
-      _keys(rawCounts, backupColumns.keys);
+      final columns = schema >= 4 ? backupColumns : legacyBackupColumns;
+      _keys(rawRecords, columns.keys);
+      _keys(rawCounts, columns.keys);
       final records = <String, List<Map<String, Object?>>>{};
       var total = 0;
-      for (final table in backupColumns.entries) {
+      for (final table in columns.entries) {
         final rows = rawRecords[table.key];
         if (rows is! List ||
             rawCounts[table.key] is! int ||
@@ -166,12 +189,8 @@ class BackupSnapshot {
         result.sort((a, b) => a['id'].toString().compareTo(b['id'].toString()));
         records[table.key] = List.unmodifiable(result);
       }
-      _validateRows(records, root['sourceSchemaVersion'] as int);
-      return BackupSnapshot._(
-        created,
-        Map.unmodifiable(records),
-        root['sourceSchemaVersion'] as int,
-      );
+      _validateRows(records, schema);
+      return BackupSnapshot._(created, Map.unmodifiable(records), schema);
     } on BackupException {
       rethrow;
     } catch (_) {
@@ -303,6 +322,17 @@ void _validateRows(Map<String, List<Map<String, Object?>>> tables, int schema) {
     _instant(row['created_at']);
   }
   final activePayments = <Object?>{};
+  final batches = {
+    for (final row in tables['payment_batches'] ?? <Map<String, Object?>>[])
+      row['id']: row,
+  };
+  final batchPayments = <Object?, List<Map<String, Object?>>>{};
+  for (final batch in batches.values) {
+    if (!clients.containsKey(batch['client_id'])) _invalid();
+    _money(batch['total_minor']);
+    _instant(batch['paid_at']);
+    _instant(batch['voided_at'], nullable: true);
+  }
   for (final row in tables['payments']!) {
     final charge = charges[row['charge_id']];
     if (charge == null) _invalid();
@@ -310,10 +340,44 @@ void _validateRows(Map<String, List<Map<String, Object?>>> tables, int schema) {
     _instant(row['paid_at']);
     _instant(row['voided_at'], nullable: true);
     _text(row['note']);
+    final batchId = row['batch_id'];
+    if (batchId != null) {
+      final batch = batches[batchId];
+      if (batch == null ||
+          charge['client_id'] != batch['client_id'] ||
+          row['paid_at'] != batch['paid_at'] ||
+          (schema == 4 && row['voided_at'] != batch['voided_at']) ||
+          (batch['voided_at'] != null && row['voided_at'] == null)) {
+        _invalid();
+      }
+      (batchPayments[batchId] ??= []).add(row);
+    }
     // An annulled payment may retain a different historical amount after a correction.
     if (row['voided_at'] == null &&
         (!activePayments.add(row['charge_id']) ||
             row['amount_minor'] != charge['amount_minor'])) {
+      _invalid();
+    }
+  }
+  for (final batch in batches.values) {
+    final children = batchPayments[batch['id']];
+    if (children == null ||
+        children.length < 2 ||
+        children.length > (schema == 4 ? 2 : 12) ||
+        children.map((row) => row['charge_id']).toSet().length !=
+            children.length) {
+      _invalid();
+    }
+    var remaining = batch['total_minor'] as int;
+    for (final row in children) {
+      final amount = row['amount_minor'] as int;
+      if (amount > remaining) _invalid();
+      remaining -= amount;
+    }
+    final groupVoidedAt = batch['voided_at'];
+    if (remaining != 0 ||
+        (groupVoidedAt != null &&
+            !children.any((row) => row['voided_at'] == groupVoidedAt))) {
       _invalid();
     }
   }

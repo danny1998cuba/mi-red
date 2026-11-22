@@ -39,7 +39,7 @@ void main() {
   final verifier = SchemaVerifier(GeneratedHelper());
 
   test(
-    'v1 file migrates to v3, preserves every old value and reopens repeatedly',
+    'v1 file migrates to v5, preserves every old value and reopens repeatedly',
     () async {
       final directory = await Directory.systemTemp.createTemp(
         'mi_red_ip_migration_',
@@ -61,7 +61,7 @@ void main() {
       final before = snapshotData(raw);
       final oldSchema = raw
           .select(
-            "SELECT name, sql FROM sqlite_master WHERE name != 'devices' ORDER BY name",
+            "SELECT name, sql FROM sqlite_master WHERE tbl_name NOT IN ('devices','payments','payment_batches') ORDER BY name",
           )
           .map((row) => Map<String, Object?>.from(row))
           .toList();
@@ -72,13 +72,13 @@ void main() {
         try {
           await verifier.migrateAndValidate(
             db,
-            3,
+            5,
             options: const ValidationOptions(validateDropped: true),
           );
           expect(
             (await db.customSelect('PRAGMA user_version').getSingle())
                 .read<int>('user_version'),
-            3,
+            5,
           );
           expect(
             (await db.customSelect('PRAGMA foreign_keys').getSingle())
@@ -119,6 +119,7 @@ void main() {
                     .map((row) {
                       final data = Map<String, Object?>.from(row.data);
                       if (table == 'devices') data.remove('ip_address');
+                      if (table == 'payments') data.remove('batch_id');
                       return data;
                     })
                     .toList();
@@ -127,7 +128,7 @@ void main() {
           expect(
             (await db
                     .customSelect(
-                      "SELECT name, sql FROM sqlite_master WHERE name != 'devices' ORDER BY name",
+                      "SELECT name, sql FROM sqlite_master WHERE tbl_name NOT IN ('devices','payments','payment_batches') ORDER BY name",
                     )
                     .get())
                 .map((row) => row.data)

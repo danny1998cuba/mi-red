@@ -83,3 +83,12 @@ T01 -> T02 -> T03 -> T04 -> T05 -> T06 -> T07 -> T08. En pruebas tempranas de T0
 - Formulario de texto en lugar del selector; SQLite v3 elimina únicamente el CHECK del catálogo de devices.type mediante migración v1/v2 → v3 que conserva los datos.
 - Formato cifrado 1 sin cambios criptográficos: importar esquemas 2 y 3; exportar esquema 3. Mantener la validación de columnas, integridad y restauración transaccional.
 - Aceptación: crear/editar tipos propios, conservar etiquetas históricas y datos financieros, migración/reapertura con datos y rollback, copia cifrada anterior importable y round trip de tipos nuevos.
+
+## T09 — Pago de 2 mensualidades
+- Crear una operación con los dos cargos elegibles más antiguos, con previsualización, confirmación única y anulación conjunta.
+- Migrar a SQLite v4, importar respaldos cifrados de esquema 2/3 y exportar esquema 4. Verificar compatibilidad, atomicidad y proyecciones por período.
+- Preparar 1.1.0 para validar actualización en Android. Véase [informe T09](T09_PAGOS_MULTIMENSUALES_REPORTE.md).
+
+## T09.1 — Hasta 12 mensualidades y anulaciones flexibles
+- Añadir selector 1–12, ordenar el historial por período y las operaciones por fecha, y permitir anular un miembro o todos los pagos aún vigentes.
+- Migrar los triggers a SQLite v5. Importar copias de esquemas 2 a 5 y exportar esquema 5. Véase [informe T09.1](T09_1_PAGOS_HASTA_12_REPORTE.md).

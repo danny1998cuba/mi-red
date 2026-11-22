@@ -146,39 +146,43 @@ void main() {
     );
   });
 
-  test('T07 restore preserves local appearance and all five snapshot tables exactly', () async {
-    final db = AppDatabase(NativeDatabase.memory());
-    addTearDown(db.close);
-    final service = BackupService(db);
-    final original = syntheticBackup();
-    await service.restore(original);
-    await container.read(appearanceProvider.notifier).select(ThemeMode.dark);
-    expect((await service.capture(backupTestDate)).records, original.records);
-    final replacement = syntheticBackup(notifications: false);
-    await service.restore(replacement);
-    expect(
-      (await service.capture(backupTestDate)).records,
-      replacement.records,
-    );
-    expect(container.read(appearanceProvider).mode, ThemeMode.dark);
-    expect(await repository.read(), ThemeMode.dark);
-    expect(
-      replacement.records.keys,
-      unorderedEquals([
-        'clients',
-        'devices',
-        'charges',
-        'payments',
-        'app_settings',
-      ]),
-    );
-    expect(
-      replacement.toJson().toString(),
-      isNot(contains(DeviceAppearanceRepository.key)),
-    );
-    final freshDevice = FakeAppearanceRepository();
-    expect((await loadAppearance(freshDevice)).mode, ThemeMode.system);
-  });
+  test(
+    'Restore preserves local appearance and all six snapshot tables exactly',
+    () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final service = BackupService(db);
+      final original = syntheticBackup();
+      await service.restore(original);
+      await container.read(appearanceProvider.notifier).select(ThemeMode.dark);
+      expect((await service.capture(backupTestDate)).records, original.records);
+      final replacement = syntheticBackup(notifications: false);
+      await service.restore(replacement);
+      expect(
+        (await service.capture(backupTestDate)).records,
+        replacement.records,
+      );
+      expect(container.read(appearanceProvider).mode, ThemeMode.dark);
+      expect(await repository.read(), ThemeMode.dark);
+      expect(
+        replacement.records.keys,
+        unorderedEquals([
+          'clients',
+          'devices',
+          'charges',
+          'payments',
+          'app_settings',
+          'payment_batches',
+        ]),
+      );
+      expect(
+        replacement.toJson().toString(),
+        isNot(contains(DeviceAppearanceRepository.key)),
+      );
+      final freshDevice = FakeAppearanceRepository();
+      expect((await loadAppearance(freshDevice)).mode, ThemeMode.system);
+    },
+  );
 }
 
 class _PendingAppearance implements AppearanceRepository {

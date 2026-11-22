@@ -10,6 +10,8 @@ Una copia cifrada incluye los datos de los clientes, sus equipos (MAC e IP), men
 
 El archivo termina en **`.miredbk`**, se protege con contraseña y solo se puede leer desde el flujo de restauración de Mi Red con esa contraseña.
 
+T09.1 abre las copias de Mi Red 1.0 con sus pagos individuales y las de Mi Red 1.1 T09 con sus grupos de dos. Las copias nuevas incluyen grupos de hasta 12 y conservan la fecha de cada anulación. Para abrirlas se necesita T09.1 o una versión compatible con el esquema 5.
+
 ## A. Crear la copia
 
 1. Abre **Ajustes → Copias de seguridad → Crear copia**.

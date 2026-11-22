@@ -33,7 +33,7 @@ Future<void> main() async {
     late final Map<String, int> counts;
     try {
       final version = raw.select('PRAGMA user_version').single['user_version'];
-      if (version != (mode == 'write' ? 1 : 3)) {
+      if (version != (mode == 'write' ? 1 : 5)) {
         throw StateError('Unexpected version');
       }
       before = jsonEncode({

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../billing_calendar.dart';
+import '../billing_values.dart';
 import 'billing_service.dart';
 import 'payment_service.dart';
 
@@ -50,11 +51,39 @@ class ClientBillingData {
     this.charges,
     this.payments,
     this.currencyLabel,
+    this.batches,
   );
   final ClientRecord client;
   final List<ChargeWithStatus> charges;
   final List<PaymentRecord> payments;
   final String currencyLabel;
+  final List<BatchHistory> batches;
+
+  String coverageLabel(LocalDate today) {
+    final pending = charges.where((row) => row.activePayment == null);
+    if (pending.isNotEmpty) {
+      final oldest = BillingPeriod.parse(pending.first.charge.periodKey);
+      return 'Tiene mensualidades pendientes. Próxima mensualidad pendiente: ${periodLabel(oldest)}.';
+    }
+    if (client.status != 'active') {
+      return 'Sin mensualidades pendientes registradas.';
+    }
+    final paid = charges.map((row) => row.charge.periodKey).toSet();
+    var next = currentPeriod(today);
+    final start = BillingPeriod.parse(client.billingStartPeriod);
+    if (start.compareTo(next) > 0) next = start;
+    BillingPeriod? covered;
+    while (paid.contains(next.key)) {
+      covered = next;
+      final following = adjacentPeriod(next, 1);
+      if (following == null) return 'Cubierto hasta ${periodLabel(next)}.';
+      next = following;
+    }
+    final nextLabel = 'Próxima mensualidad pendiente: ${periodLabel(next)}.';
+    return covered == null
+        ? nextLabel
+        : 'Cubierto hasta ${periodLabel(covered)}. $nextLabel';
+  }
 
   PaymentRecord? get lastValidPayment {
     final valid = payments
@@ -74,7 +103,13 @@ class BillingQueries {
   Stream<List<QueryRow>> _changes() => db
       .customSelect(
         'SELECT 1',
-        readsFrom: {db.clients, db.charges, db.payments, db.appSettings},
+        readsFrom: {
+          db.clients,
+          db.charges,
+          db.payments,
+          db.paymentBatches,
+          db.appSettings,
+        },
       )
       .watch();
 
@@ -198,6 +233,7 @@ class BillingQueries {
           await billing.historyForClient(id, today: today),
           await payments.historyForClient(id),
           (await db.select(db.appSettings).getSingle()).currencyLabel,
+          await payments.batchesForClient(id),
         );
       });
 }

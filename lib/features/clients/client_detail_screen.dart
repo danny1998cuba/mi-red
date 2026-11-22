@@ -8,6 +8,7 @@ import '../../core/design_system/app_components.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/database_providers.dart';
 import '../billing/billing_calendar.dart';
+import '../billing/billing_providers.dart';
 import 'client_providers.dart';
 import 'client_values.dart';
 import 'data/client_service.dart';
@@ -149,6 +150,8 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
   Widget _content(ClientRecord client) {
     final archived = client.status == 'archived';
     final currency = ref.watch(currencyLabelProvider).asData?.value ?? '';
+    final billing = ref.watch(clientBillingProvider(client.id)).asData?.value;
+    final today = ref.watch(billingSessionProvider).asData?.value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -172,6 +175,10 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen> {
                   '${formatMoneyMinor(client.monthlyFeeMinor, currencyLabel: currency)} al mes',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
+                if (billing != null && today != null) ...[
+                  const SizedBox(height: 8),
+                  Text(billing.coverageLabel(today)),
+                ],
               ],
             ),
           ),

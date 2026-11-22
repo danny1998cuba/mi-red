@@ -9,6 +9,7 @@ import '../../clients/client_providers.dart';
 import '../../clients/client_values.dart';
 import '../billing_calendar.dart';
 import '../billing_values.dart';
+import 'batch_payment_action.dart';
 
 class PaymentAction extends StatefulWidget {
   const PaymentAction({
@@ -16,11 +17,13 @@ class PaymentAction extends StatefulWidget {
     required this.clientName,
     required this.currencyLabel,
     this.payment,
+    this.allowBatch = true,
     super.key,
   });
   final ChargeRecord charge;
   final String clientName, currencyLabel;
   final PaymentRecord? payment;
+  final bool allowBatch;
   @override
   State<PaymentAction> createState() => _PaymentActionState();
 }
@@ -32,6 +35,14 @@ class _PaymentActionState extends State<PaymentAction> {
     FocusScope.of(context).unfocus();
     setState(() => _opening = true);
     try {
+      if (widget.allowBatch && widget.payment == null) {
+        await showBatchPayment(
+          context,
+          widget.charge.clientId,
+          selectedPeriod: widget.charge.periodKey,
+        );
+        return;
+      }
       await showDialog<bool>(
         context: context,
         barrierDismissible: false,

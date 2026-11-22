@@ -11,6 +11,8 @@ import '../billing_calendar.dart';
 import '../billing_values.dart';
 import '../data/billing_queries.dart';
 import '../data/billing_service.dart';
+import '../data/payment_service.dart';
+import 'batch_payment_action.dart';
 import 'payment_action.dart';
 import 'charge_correction_action.dart';
 
@@ -89,14 +91,17 @@ class BillingChargeCard extends StatelessWidget {
     this.hasPreviousDebt = false,
     this.showHistoryLink = true,
     this.payments = const [],
+    this.batches = const {},
     this.selected = false,
+    this.upcoming = false,
     super.key,
   });
   final ClientRecord client;
   final ChargeWithStatus item;
   final String currencyLabel;
-  final bool hasPreviousDebt, showHistoryLink, selected;
+  final bool hasPreviousDebt, showHistoryLink, selected, upcoming;
   final List<PaymentRecord> payments;
+  final Map<String, BatchHistory> batches;
   @override
   Widget build(BuildContext context) {
     final charge = item.charge;
@@ -123,12 +128,13 @@ class BillingChargeCard extends StatelessWidget {
                       style: TextStyle(color: AppPalette.of(context).accent),
                     ),
                   ),
-                Text(
-                  showHistoryLink
-                      ? client.fullName
-                      : periodLabel(BillingPeriod.parse(charge.periodKey)),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                if (!selected)
+                  Text(
+                    showHistoryLink
+                        ? client.fullName
+                        : periodLabel(BillingPeriod.parse(charge.periodKey)),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 12,
@@ -154,9 +160,13 @@ class BillingChargeCard extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: Text(
-                      'Pagado el ${paymentDateLabel(item.activePayment!.paidAt)}',
+                      isAdvancePayment(charge, item.activePayment!)
+                          ? 'Pagado anticipadamente · ${paymentDateLabel(item.activePayment!.paidAt)}'
+                          : 'Pagado el ${paymentDateLabel(item.activePayment!.paidAt)}',
                     ),
                   ),
+                if (upcoming && item.activePayment == null)
+                  const Text('Pendiente en un próximo período'),
                 if (hasPreviousDebt)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -186,6 +196,7 @@ class BillingChargeCard extends StatelessWidget {
                         charge: charge,
                         clientName: client.fullName,
                         currencyLabel: currencyLabel,
+                        allowBatch: client.status != 'archived',
                       ),
                     if (showHistoryLink)
                       TextButton.icon(
@@ -246,7 +257,15 @@ class BillingChargeCard extends StatelessWidget {
                             ),
                           if (payment.note?.isNotEmpty ?? false)
                             Text('Nota: ${payment.note}'),
-                          if (payment.voidedAt == null &&
+                          if (payment.batchId != null) ...[
+                            const Text('Pago agrupado'),
+                            if (batches[payment.batchId] case final group?)
+                              BatchDetailAction(
+                                group,
+                                currencyLabel,
+                                paymentId: payment.id,
+                              ),
+                          ] else if (payment.voidedAt == null &&
                               item.activePayment?.id == payment.id)
                             Align(
                               alignment: Alignment.centerLeft,

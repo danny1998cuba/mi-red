@@ -409,9 +409,10 @@ class _BackupDialogState extends ConsumerState<_BackupDialog> {
                         ('devices', 'Dispositivos'),
                         ('charges', 'Mensualidades'),
                         ('payments', 'Pagos (incluidos anulados)'),
+                        ('payment_batches', 'Operaciones agrupadas'),
                       ])
                         Text(
-                          '$label: ${_snapshot!.counts[table]} / ${_currentCounts![table]}',
+                          '$label: ${_snapshot!.counts[table] ?? 0} / ${_currentCounts![table]}',
                         ),
                       const Text(
                         'Incluye todos los ajustes, MAC, IP y auditoría. No incluye permisos ni alarmas Android.',

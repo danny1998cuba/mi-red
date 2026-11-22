@@ -14,6 +14,7 @@ import 'package:mi_red/features/backups/backup_service.dart';
 import 'package:mi_red/features/backups/backup_snapshot.dart';
 import 'package:mi_red/features/billing/billing_calendar.dart';
 import 'package:mi_red/features/billing/data/billing_service.dart';
+import 'package:mi_red/features/billing/data/payment_service.dart';
 
 import 'backup_fixture.dart';
 
@@ -28,30 +29,180 @@ void main() {
   Future<String> fingerprint() async =>
       jsonEncode((await service.capture(backupTestDate)).records);
 
-  test('format 1 schema 2 encrypted backup imports with all historical values unchanged', () async {
-    final legacyJson = syntheticBackup().toJson()..['sourceSchemaVersion'] = 2;
-    final legacy = BackupSnapshot.fromJson(legacyJson);
-    final cipher = AuthenticatedBackupCipher();
-    const password = 'Clave sintética anterior 2026';
-    final bytes = await cipher.encrypt(legacy, password);
-    final imported = await cipher.decrypt(bytes, password);
-    expect(imported.sourceSchemaVersion, 2);
-    expect(imported.toJson(), legacyJson);
-    await service.restore(imported);
-    final captured = await service.capture(backupTestDate);
-    expect(captured.sourceSchemaVersion, 3);
-    expect(captured.records, legacy.records);
+  for (final schema in [2, 3, 4]) {
+    test(
+      'P18 format 1 schema $schema file restores all legacy data intact',
+      () async {
+        final legacyJson =
+            (schema == 4
+                    ? syntheticGroupedV4Backup()
+                    : syntheticBackup(schema: schema))
+                .toJson();
+        final legacy = BackupSnapshot.fromJson(legacyJson);
+        final cipher = AuthenticatedBackupCipher();
+        const password = 'Clave sintética anterior 2026';
+        final dir = await Directory.systemTemp.createTemp('mi-red-t09-legacy-');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/legacy.miredbk');
+        await file.writeAsBytes(await cipher.encrypt(legacy, password));
+        final imported = await cipher.decrypt(
+          await file.readAsBytes(),
+          password,
+        );
+        expect(imported.sourceSchemaVersion, schema);
+        expect(imported.toJson(), legacyJson);
+        await service.restore(imported);
+        final captured = await service.capture(backupTestDate);
+        expect(captured.sourceSchemaVersion, 5);
+        expect(captured.records, legacy.currentRecords);
+        expect(
+          (await db.customSelect('PRAGMA user_version').getSingle())
+              .data
+              .values
+              .single,
+          5,
+        );
+      },
+    );
+  }
+
+  test('P19/P20 restores active and voided groups and rejects invalid copies atomically', () async {
+    await service.restore(syntheticBackup(schema: 3));
+    final payments = PaymentService(db);
+    final when = DateTime(2026, 10, 29, 12);
+    final first = await payments.previewBatch('active', when, count: 2);
+    await payments.registerBatch(first, paidAt: when);
+    final second = await payments.previewBatch('active', when, count: 2);
+    await payments.registerBatch(second, paidAt: when);
+    await payments.voidBatch(
+      first.id,
+      voidedAt: when.add(const Duration(minutes: 1)),
+      expectedActiveIds: (await payments.batchesForClient('active'))
+          .firstWhere((group) => group.batch.id == first.id)
+          .active
+          .map((row) => row.payment.id)
+          .toSet(),
+    );
+    final snapshot = await service.capture(when);
+    expect(snapshot.counts['payment_batches'], 2);
     expect(
-      (await db.customSelect('PRAGMA user_version').getSingle())
-          .data
-          .values
-          .single,
-      3,
+      snapshot.records['payments']!.where((row) => row['batch_id'] != null),
+      hasLength(4),
+    );
+    final cipher = AuthenticatedBackupCipher();
+    const password = 'Clave sintética agrupada 2026';
+    final dir = await Directory.systemTemp.createTemp('mi-red-t09-current-');
+    addTearDown(() => dir.delete(recursive: true));
+    final file = File('${dir.path}/current.miredbk');
+    await file.writeAsBytes(await cipher.encrypt(snapshot, password));
+    await service.restore(syntheticBackup());
+    final bytes = await file.readAsBytes();
+    await service.restore(await cipher.decrypt(bytes, password));
+    expect((await service.capture(when)).toJson(), snapshot.toJson());
+    final groups = await payments.batchesForClient('active');
+    expect(groups.where((group) => group.batch.voidedAt == null), hasLength(1));
+    expect(groups.every((group) => group.payments.length == 2), isTrue);
+    final before = await fingerprint();
+    await expectLater(
+      cipher.decrypt(bytes, 'Incorrecta'),
+      throwsA(isA<BackupException>()),
+    );
+    bytes[bytes.length - 1] ^= 1;
+    await expectLater(
+      cipher.decrypt(bytes, password),
+      throwsA(isA<BackupException>()),
+    );
+    for (final field in ['total_minor', 'client_id', 'voided_at', 'paid_at']) {
+      final invalid =
+          jsonDecode(jsonEncode(snapshot.toJson())) as Map<String, dynamic>;
+      invalid['records']['payment_batches'][0][field] = field == 'client_id'
+          ? 'archived'
+          : 1;
+      expect(
+        () => BackupSnapshot.fromJson(invalid),
+        throwsA(isA<BackupException>()),
+      );
+    }
+    final incomplete =
+        jsonDecode(jsonEncode(snapshot.toJson())) as Map<String, dynamic>;
+    (incomplete['records']['payments'] as List).removeWhere(
+      (row) => row['batch_id'] == first.id,
+    );
+    incomplete['counts']['payments'] -= 2;
+    expect(
+      () => BackupSnapshot.fromJson(incomplete),
+      throwsA(isA<BackupException>()),
+    );
+    expect(await fingerprint(), before);
+  });
+
+  test('T09.1 schema 5 authenticated backup preserves all three group states and survives SQLite reopen', () async {
+    final disk = await Directory.systemTemp.createTemp('mi-red-t091-restore-');
+    addTearDown(() => disk.delete(recursive: true));
+    final dbFile = File('${disk.path}/roundtrip.sqlite');
+    final old = syntheticGroupedV4Backup();
+    await service.restore(old);
+    final payments = PaymentService(db);
+    final date = DateTime(2026, 10, 29, 12);
+    final quote = await payments.previewBatch('active', date, count: 12);
+    await payments.registerBatch(quote, paidAt: date);
+    final group = (await payments.batchesForClient('active'))
+        .singleWhere((row) => row.batch.id == quote.id);
+    await payments.voidPayment(
+      group.payments[4].payment.id,
+      expectedBatchId: group.batch.id,
+      expectedClientId: group.batch.clientId,
+      voidedAt: date,
+    );
+    final snapshot = await service.capture(date);
+    expect(snapshot.sourceSchemaVersion, 5);
+    final cipher = AuthenticatedBackupCipher();
+    const password = 'Clave sintética T09.1 para pruebas';
+    final file = File('${disk.path}/roundtrip.miredbk');
+    await file.writeAsBytes(await cipher.encrypt(snapshot, password));
+    await db.close();
+    final target = AppDatabase(NativeDatabase(dbFile));
+    try {
+      await BackupService(target)
+          .restore(await cipher.decrypt(await file.readAsBytes(), password));
+    } finally {
+      await target.close();
+    }
+    final reopened = AppDatabase(NativeDatabase(dbFile));
+    try {
+      expect(
+        (await BackupService(reopened).capture(date)).toJson(),
+        snapshot.toJson(),
+      );
+      final histories = await PaymentService(reopened)
+          .batchesForClient('active');
+      expect(
+        histories.map((row) => row.status),
+        unorderedEquals(BatchStatus.values),
+      );
+      expect(
+        histories
+            .where((row) => row.status == BatchStatus.partiallyVoided)
+            .single
+            .active,
+        hasLength(11),
+      );
+      expect(
+        await reopened.customSelect('PRAGMA foreign_key_check').get(),
+        isEmpty,
+      );
+    } finally {
+      await reopened.close();
+    }
+    final mislabeled = snapshot.toJson()..['sourceSchemaVersion'] = 4;
+    expect(
+      () => BackupSnapshot.fromJson(mislabeled),
+      throwsA(isA<BackupException>()),
     );
   });
 
   test(
-    'schema 3 free device types survive encryption, restore and re-export',
+    'schema 5 free device types survive encryption, restore and re-export',
     () async {
       final json = jsonDecode(
         jsonEncode(syntheticBackup().toJson()),
@@ -66,7 +217,7 @@ void main() {
     },
   );
 
-  test('consistent five-table snapshot retains every exact raw column, integer, ID and nullable IP', () async {
+  test('consistent six-table snapshot retains every exact raw column, integer, ID and nullable IP', () async {
     final fixture = syntheticBackup();
     await insertSyntheticBackup(db, fixture);
     final captured = await service.capture(backupTestDate);
@@ -159,7 +310,7 @@ void main() {
           .data
           .values
           .single,
-      3,
+      5,
     );
     await db.close();
     await dir.delete(recursive: true);
@@ -206,15 +357,11 @@ void main() {
   final corruptions = <String, void Function(Map<String, dynamic>)>{
     'future format': (j) => j['backupFormatVersion'] = 99,
     'floating format': (j) => j['backupFormatVersion'] = 1.0,
-    'future schema': (j) => j['sourceSchemaVersion'] = 4,
+    'future schema': (j) => j['sourceSchemaVersion'] = 6,
     'floating schema': (j) => j['sourceSchemaVersion'] = 3.0,
     'empty device type': (j) => j['records']['devices'][0]['type'] = '  ',
     'null device type': (j) => j['records']['devices'][0]['type'] = null,
     'non-text device type': (j) => j['records']['devices'][0]['type'] = 42,
-    'custom type mislabeled schema 2': (j) {
-      j['sourceSchemaVersion'] = 2;
-      j['records']['devices'][0]['type'] = 'Switch';
-    },
     'legacy missing IP': (j) => j['records']['devices'][0].remove('ip_address'),
     'different app': (j) => j['appIdentifier'] = 'another.app',
     'broken foreign key': (j) =>
@@ -262,6 +409,19 @@ void main() {
       expect(await fingerprint(), before);
     });
   }
+
+  test('legacy schema 2 still rejects free-text device types before replacing data', () async {
+    final before = await fingerprint();
+    final json = jsonDecode(
+      jsonEncode(syntheticBackup(schema: 2).toJson()),
+    ) as Map<String, dynamic>;
+    json['records']['devices'][0]['type'] = 'Switch';
+    expect(
+      () => BackupSnapshot.fromJson(json),
+      throwsA(isA<BackupException>()),
+    );
+    expect(await fingerprint(), before);
+  });
 
   test('private cache cleanup removes owned interrupted copies and preserves unrelated files', () async {
     final cache = await Directory.systemTemp.createTemp(

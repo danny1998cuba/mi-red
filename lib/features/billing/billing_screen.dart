@@ -45,7 +45,6 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
 
   void _select(BillingPeriod? period) {
     setState(() => _selected = period);
-    unawaited(_prepare());
   }
 
   @override

@@ -1593,6 +1593,373 @@ class ChargesCompanion extends UpdateCompanion<ChargeRecord> {
   }
 }
 
+class PaymentBatches extends Table
+    with TableInfo<PaymentBatches, PaymentBatchRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  PaymentBatches(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0)',
+  );
+  static const VerificationMeta _clientIdMeta = const VerificationMeta(
+    'clientId',
+  );
+  late final GeneratedColumn<String> clientId = GeneratedColumn<String>(
+    'client_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL REFERENCES clients(id)ON DELETE RESTRICT',
+  );
+  static const VerificationMeta _paidAtMeta = const VerificationMeta('paidAt');
+  late final GeneratedColumn<int> paidAt = GeneratedColumn<int>(
+    'paid_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _totalMinorMeta = const VerificationMeta(
+    'totalMinor',
+  );
+  late final GeneratedColumn<int> totalMinor = GeneratedColumn<int>(
+    'total_minor',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (typeof(total_minor) = \'integer\' AND total_minor >= 0)',
+  );
+  static const VerificationMeta _voidedAtMeta = const VerificationMeta(
+    'voidedAt',
+  );
+  late final GeneratedColumn<int> voidedAt = GeneratedColumn<int>(
+    'voided_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    clientId,
+    paidAt,
+    totalMinor,
+    voidedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'payment_batches';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PaymentBatchRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('client_id')) {
+      context.handle(
+        _clientIdMeta,
+        clientId.isAcceptableOrUnknown(data['client_id']!, _clientIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_clientIdMeta);
+    }
+    if (data.containsKey('paid_at')) {
+      context.handle(
+        _paidAtMeta,
+        paidAt.isAcceptableOrUnknown(data['paid_at']!, _paidAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_paidAtMeta);
+    }
+    if (data.containsKey('total_minor')) {
+      context.handle(
+        _totalMinorMeta,
+        totalMinor.isAcceptableOrUnknown(data['total_minor']!, _totalMinorMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_totalMinorMeta);
+    }
+    if (data.containsKey('voided_at')) {
+      context.handle(
+        _voidedAtMeta,
+        voidedAt.isAcceptableOrUnknown(data['voided_at']!, _voidedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PaymentBatchRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PaymentBatchRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      clientId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_id'],
+      )!,
+      paidAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}paid_at'],
+      )!,
+      totalMinor: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_minor'],
+      )!,
+      voidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}voided_at'],
+      ),
+    );
+  }
+
+  @override
+  PaymentBatches createAlias(String alias) {
+    return PaymentBatches(attachedDatabase, alias);
+  }
+
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class PaymentBatchRecord extends DataClass
+    implements Insertable<PaymentBatchRecord> {
+  final String id;
+  final String clientId;
+  final int paidAt;
+  final int totalMinor;
+  final int? voidedAt;
+  const PaymentBatchRecord({
+    required this.id,
+    required this.clientId,
+    required this.paidAt,
+    required this.totalMinor,
+    this.voidedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['client_id'] = Variable<String>(clientId);
+    map['paid_at'] = Variable<int>(paidAt);
+    map['total_minor'] = Variable<int>(totalMinor);
+    if (!nullToAbsent || voidedAt != null) {
+      map['voided_at'] = Variable<int>(voidedAt);
+    }
+    return map;
+  }
+
+  PaymentBatchesCompanion toCompanion(bool nullToAbsent) {
+    return PaymentBatchesCompanion(
+      id: Value(id),
+      clientId: Value(clientId),
+      paidAt: Value(paidAt),
+      totalMinor: Value(totalMinor),
+      voidedAt: voidedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(voidedAt),
+    );
+  }
+
+  factory PaymentBatchRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PaymentBatchRecord(
+      id: serializer.fromJson<String>(json['id']),
+      clientId: serializer.fromJson<String>(json['client_id']),
+      paidAt: serializer.fromJson<int>(json['paid_at']),
+      totalMinor: serializer.fromJson<int>(json['total_minor']),
+      voidedAt: serializer.fromJson<int?>(json['voided_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'client_id': serializer.toJson<String>(clientId),
+      'paid_at': serializer.toJson<int>(paidAt),
+      'total_minor': serializer.toJson<int>(totalMinor),
+      'voided_at': serializer.toJson<int?>(voidedAt),
+    };
+  }
+
+  PaymentBatchRecord copyWith({
+    String? id,
+    String? clientId,
+    int? paidAt,
+    int? totalMinor,
+    Value<int?> voidedAt = const Value.absent(),
+  }) => PaymentBatchRecord(
+    id: id ?? this.id,
+    clientId: clientId ?? this.clientId,
+    paidAt: paidAt ?? this.paidAt,
+    totalMinor: totalMinor ?? this.totalMinor,
+    voidedAt: voidedAt.present ? voidedAt.value : this.voidedAt,
+  );
+  PaymentBatchRecord copyWithCompanion(PaymentBatchesCompanion data) {
+    return PaymentBatchRecord(
+      id: data.id.present ? data.id.value : this.id,
+      clientId: data.clientId.present ? data.clientId.value : this.clientId,
+      paidAt: data.paidAt.present ? data.paidAt.value : this.paidAt,
+      totalMinor: data.totalMinor.present
+          ? data.totalMinor.value
+          : this.totalMinor,
+      voidedAt: data.voidedAt.present ? data.voidedAt.value : this.voidedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PaymentBatchRecord(')
+          ..write('id: $id, ')
+          ..write('clientId: $clientId, ')
+          ..write('paidAt: $paidAt, ')
+          ..write('totalMinor: $totalMinor, ')
+          ..write('voidedAt: $voidedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, clientId, paidAt, totalMinor, voidedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PaymentBatchRecord &&
+          other.id == this.id &&
+          other.clientId == this.clientId &&
+          other.paidAt == this.paidAt &&
+          other.totalMinor == this.totalMinor &&
+          other.voidedAt == this.voidedAt);
+}
+
+class PaymentBatchesCompanion extends UpdateCompanion<PaymentBatchRecord> {
+  final Value<String> id;
+  final Value<String> clientId;
+  final Value<int> paidAt;
+  final Value<int> totalMinor;
+  final Value<int?> voidedAt;
+  final Value<int> rowid;
+  const PaymentBatchesCompanion({
+    this.id = const Value.absent(),
+    this.clientId = const Value.absent(),
+    this.paidAt = const Value.absent(),
+    this.totalMinor = const Value.absent(),
+    this.voidedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PaymentBatchesCompanion.insert({
+    required String id,
+    required String clientId,
+    required int paidAt,
+    required int totalMinor,
+    this.voidedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       clientId = Value(clientId),
+       paidAt = Value(paidAt),
+       totalMinor = Value(totalMinor);
+  static Insertable<PaymentBatchRecord> custom({
+    Expression<String>? id,
+    Expression<String>? clientId,
+    Expression<int>? paidAt,
+    Expression<int>? totalMinor,
+    Expression<int>? voidedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (clientId != null) 'client_id': clientId,
+      if (paidAt != null) 'paid_at': paidAt,
+      if (totalMinor != null) 'total_minor': totalMinor,
+      if (voidedAt != null) 'voided_at': voidedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PaymentBatchesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? clientId,
+    Value<int>? paidAt,
+    Value<int>? totalMinor,
+    Value<int?>? voidedAt,
+    Value<int>? rowid,
+  }) {
+    return PaymentBatchesCompanion(
+      id: id ?? this.id,
+      clientId: clientId ?? this.clientId,
+      paidAt: paidAt ?? this.paidAt,
+      totalMinor: totalMinor ?? this.totalMinor,
+      voidedAt: voidedAt ?? this.voidedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (clientId.present) {
+      map['client_id'] = Variable<String>(clientId.value);
+    }
+    if (paidAt.present) {
+      map['paid_at'] = Variable<int>(paidAt.value);
+    }
+    if (totalMinor.present) {
+      map['total_minor'] = Variable<int>(totalMinor.value);
+    }
+    if (voidedAt.present) {
+      map['voided_at'] = Variable<int>(voidedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PaymentBatchesCompanion(')
+          ..write('id: $id, ')
+          ..write('clientId: $clientId, ')
+          ..write('paidAt: $paidAt, ')
+          ..write('totalMinor: $totalMinor, ')
+          ..write('voidedAt: $voidedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class Payments extends Table with TableInfo<Payments, PaymentRecord> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -1658,6 +2025,17 @@ class Payments extends Table with TableInfo<Payments, PaymentRecord> {
     requiredDuringInsert: false,
     $customConstraints: '',
   );
+  static const VerificationMeta _batchIdMeta = const VerificationMeta(
+    'batchId',
+  );
+  late final GeneratedColumn<String> batchId = GeneratedColumn<String>(
+    'batch_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'REFERENCES payment_batches(id)ON DELETE RESTRICT',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1666,6 +2044,7 @@ class Payments extends Table with TableInfo<Payments, PaymentRecord> {
     paidAt,
     note,
     voidedAt,
+    batchId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1723,6 +2102,12 @@ class Payments extends Table with TableInfo<Payments, PaymentRecord> {
         voidedAt.isAcceptableOrUnknown(data['voided_at']!, _voidedAtMeta),
       );
     }
+    if (data.containsKey('batch_id')) {
+      context.handle(
+        _batchIdMeta,
+        batchId.isAcceptableOrUnknown(data['batch_id']!, _batchIdMeta),
+      );
+    }
     return context;
   }
 
@@ -1756,6 +2141,10 @@ class Payments extends Table with TableInfo<Payments, PaymentRecord> {
         DriftSqlType.int,
         data['${effectivePrefix}voided_at'],
       ),
+      batchId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}batch_id'],
+      ),
     );
   }
 
@@ -1775,6 +2164,7 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
   final int paidAt;
   final String? note;
   final int? voidedAt;
+  final String? batchId;
   const PaymentRecord({
     required this.id,
     required this.chargeId,
@@ -1782,6 +2172,7 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
     required this.paidAt,
     this.note,
     this.voidedAt,
+    this.batchId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1796,6 +2187,9 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
     if (!nullToAbsent || voidedAt != null) {
       map['voided_at'] = Variable<int>(voidedAt);
     }
+    if (!nullToAbsent || batchId != null) {
+      map['batch_id'] = Variable<String>(batchId);
+    }
     return map;
   }
 
@@ -1809,6 +2203,9 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
       voidedAt: voidedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(voidedAt),
+      batchId: batchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(batchId),
     );
   }
 
@@ -1824,6 +2221,7 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
       paidAt: serializer.fromJson<int>(json['paid_at']),
       note: serializer.fromJson<String?>(json['note']),
       voidedAt: serializer.fromJson<int?>(json['voided_at']),
+      batchId: serializer.fromJson<String?>(json['batch_id']),
     );
   }
   @override
@@ -1836,6 +2234,7 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
       'paid_at': serializer.toJson<int>(paidAt),
       'note': serializer.toJson<String?>(note),
       'voided_at': serializer.toJson<int?>(voidedAt),
+      'batch_id': serializer.toJson<String?>(batchId),
     };
   }
 
@@ -1846,6 +2245,7 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
     int? paidAt,
     Value<String?> note = const Value.absent(),
     Value<int?> voidedAt = const Value.absent(),
+    Value<String?> batchId = const Value.absent(),
   }) => PaymentRecord(
     id: id ?? this.id,
     chargeId: chargeId ?? this.chargeId,
@@ -1853,6 +2253,7 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
     paidAt: paidAt ?? this.paidAt,
     note: note.present ? note.value : this.note,
     voidedAt: voidedAt.present ? voidedAt.value : this.voidedAt,
+    batchId: batchId.present ? batchId.value : this.batchId,
   );
   PaymentRecord copyWithCompanion(PaymentsCompanion data) {
     return PaymentRecord(
@@ -1864,6 +2265,7 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
       paidAt: data.paidAt.present ? data.paidAt.value : this.paidAt,
       note: data.note.present ? data.note.value : this.note,
       voidedAt: data.voidedAt.present ? data.voidedAt.value : this.voidedAt,
+      batchId: data.batchId.present ? data.batchId.value : this.batchId,
     );
   }
 
@@ -1875,14 +2277,15 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
           ..write('amountMinor: $amountMinor, ')
           ..write('paidAt: $paidAt, ')
           ..write('note: $note, ')
-          ..write('voidedAt: $voidedAt')
+          ..write('voidedAt: $voidedAt, ')
+          ..write('batchId: $batchId')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, chargeId, amountMinor, paidAt, note, voidedAt);
+      Object.hash(id, chargeId, amountMinor, paidAt, note, voidedAt, batchId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1892,7 +2295,8 @@ class PaymentRecord extends DataClass implements Insertable<PaymentRecord> {
           other.amountMinor == this.amountMinor &&
           other.paidAt == this.paidAt &&
           other.note == this.note &&
-          other.voidedAt == this.voidedAt);
+          other.voidedAt == this.voidedAt &&
+          other.batchId == this.batchId);
 }
 
 class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
@@ -1902,6 +2306,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
   final Value<int> paidAt;
   final Value<String?> note;
   final Value<int?> voidedAt;
+  final Value<String?> batchId;
   final Value<int> rowid;
   const PaymentsCompanion({
     this.id = const Value.absent(),
@@ -1910,6 +2315,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
     this.paidAt = const Value.absent(),
     this.note = const Value.absent(),
     this.voidedAt = const Value.absent(),
+    this.batchId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PaymentsCompanion.insert({
@@ -1919,6 +2325,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
     required int paidAt,
     this.note = const Value.absent(),
     this.voidedAt = const Value.absent(),
+    this.batchId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        chargeId = Value(chargeId),
@@ -1931,6 +2338,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
     Expression<int>? paidAt,
     Expression<String>? note,
     Expression<int>? voidedAt,
+    Expression<String>? batchId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1940,6 +2348,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
       if (paidAt != null) 'paid_at': paidAt,
       if (note != null) 'note': note,
       if (voidedAt != null) 'voided_at': voidedAt,
+      if (batchId != null) 'batch_id': batchId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1951,6 +2360,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
     Value<int>? paidAt,
     Value<String?>? note,
     Value<int?>? voidedAt,
+    Value<String?>? batchId,
     Value<int>? rowid,
   }) {
     return PaymentsCompanion(
@@ -1960,6 +2370,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
       paidAt: paidAt ?? this.paidAt,
       note: note ?? this.note,
       voidedAt: voidedAt ?? this.voidedAt,
+      batchId: batchId ?? this.batchId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1985,6 +2396,9 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
     if (voidedAt.present) {
       map['voided_at'] = Variable<int>(voidedAt.value);
     }
+    if (batchId.present) {
+      map['batch_id'] = Variable<String>(batchId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2000,6 +2414,7 @@ class PaymentsCompanion extends UpdateCompanion<PaymentRecord> {
           ..write('paidAt: $paidAt, ')
           ..write('note: $note, ')
           ..write('voidedAt: $voidedAt, ')
+          ..write('batchId: $batchId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2467,6 +2882,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'charges_candidate_date',
     'CREATE INDEX charges_candidate_date ON charges (suspension_candidate_date)',
   );
+  late final PaymentBatches paymentBatches = PaymentBatches(this);
+  late final Index paymentBatchesClient = Index(
+    'payment_batches_client',
+    'CREATE INDEX payment_batches_client ON payment_batches (client_id, paid_at)',
+  );
   late final Payments payments = Payments(this);
   late final Index paymentsCharge = Index(
     'payments_charge',
@@ -2476,13 +2896,29 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'payments_one_active',
     'CREATE UNIQUE INDEX payments_one_active ON payments (charge_id) WHERE voided_at IS NULL',
   );
+  late final Index paymentsBatchCharge = Index(
+    'payments_batch_charge',
+    'CREATE UNIQUE INDEX payments_batch_charge ON payments (batch_id, charge_id)',
+  );
+  late final Trigger paymentsMatchBatch = Trigger(
+    'CREATE TRIGGER payments_match_batch BEFORE INSERT ON payments WHEN NEW.batch_id IS NOT NULL AND(NOT EXISTS (SELECT 1 FROM payment_batches AS b JOIN charges AS c ON c.client_id = b.client_id WHERE b.id = NEW.batch_id AND c.id = NEW.charge_id AND b.paid_at = NEW.paid_at AND(b.voided_at IS NULL OR NEW.voided_at IS NOT NULL)AND NEW.amount_minor <= b.total_minor - (SELECT COALESCE(SUM(amount_minor), 0) FROM payments WHERE batch_id = b.id)) OR (SELECT COUNT(*) FROM payments WHERE batch_id = NEW.batch_id) >= 12)BEGIN SELECT RAISE (ABORT, \'El pago no corresponde al grupo.\');END',
+    'payments_match_batch',
+  );
   late final Trigger paymentsExactAmount = Trigger(
     'CREATE TRIGGER payments_exact_amount BEFORE INSERT ON payments WHEN NEW.voided_at IS NULL AND NOT EXISTS (SELECT 1 FROM charges WHERE id = NEW.charge_id AND amount_minor = NEW.amount_minor) BEGIN SELECT RAISE (ABORT, \'El importe debe coincidir con un cargo existente.\');END',
     'payments_exact_amount',
   );
   late final Trigger paymentsImmutable = Trigger(
-    'CREATE TRIGGER payments_immutable BEFORE UPDATE ON payments WHEN NEW.id IS NOT OLD.id OR NEW.charge_id IS NOT OLD.charge_id OR NEW.amount_minor IS NOT OLD.amount_minor OR NEW.paid_at IS NOT OLD.paid_at OR NEW.note IS NOT OLD.note OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL BEGIN SELECT RAISE (ABORT, \'El pago histórico solo puede anularse una vez.\');END',
+    'CREATE TRIGGER payments_immutable BEFORE UPDATE ON payments WHEN NEW.id IS NOT OLD.id OR NEW.charge_id IS NOT OLD.charge_id OR NEW.amount_minor IS NOT OLD.amount_minor OR NEW.paid_at IS NOT OLD.paid_at OR NEW.note IS NOT OLD.note OR NEW.batch_id IS NOT OLD.batch_id OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL BEGIN SELECT RAISE (ABORT, \'El pago histórico solo puede anularse una vez.\');END',
     'payments_immutable',
+  );
+  late final Trigger paymentBatchesImmutable = Trigger(
+    'CREATE TRIGGER payment_batches_immutable BEFORE UPDATE ON payment_batches WHEN NEW.id IS NOT OLD.id OR NEW.client_id IS NOT OLD.client_id OR NEW.paid_at IS NOT OLD.paid_at OR NEW.total_minor IS NOT OLD.total_minor OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL OR (SELECT COUNT(*) FROM payments WHERE batch_id = OLD.id) NOT BETWEEN 2 AND 12 OR NOT EXISTS (SELECT 1 FROM payments WHERE batch_id = OLD.id AND voided_at IS NULL) BEGIN SELECT RAISE (ABORT, \'El grupo completo solo puede anularse una vez.\');END',
+    'payment_batches_immutable',
+  );
+  late final Trigger paymentBatchesVoidChildren = Trigger(
+    'CREATE TRIGGER payment_batches_void_children AFTER UPDATE OF voided_at ON payment_batches BEGIN UPDATE payments SET voided_at = NEW.voided_at WHERE batch_id = NEW.id AND voided_at IS NULL;END',
+    'payment_batches_void_children',
   );
   late final Trigger chargesPreservePaidHistory = Trigger(
     'CREATE TRIGGER charges_preserve_paid_history BEFORE UPDATE ON charges WHEN(EXISTS (SELECT 1 FROM payments WHERE charge_id = OLD.id) AND(NEW.id IS NOT OLD.id OR NEW.client_id IS NOT OLD.client_id OR NEW.period_key IS NOT OLD.period_key))OR(NEW.amount_minor IS NOT OLD.amount_minor AND EXISTS (SELECT 1 FROM payments WHERE charge_id = OLD.id AND voided_at IS NULL))BEGIN SELECT RAISE (ABORT, \'El cargo conserva su historial de pagos.\');END',
@@ -2502,11 +2938,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     charges,
     chargesPeriod,
     chargesCandidateDate,
+    paymentBatches,
+    paymentBatchesClient,
     payments,
     paymentsCharge,
     paymentsOneActive,
+    paymentsBatchCharge,
+    paymentsMatchBatch,
     paymentsExactAmount,
     paymentsImmutable,
+    paymentBatchesImmutable,
+    paymentBatchesVoidChildren,
     chargesPreservePaidHistory,
     appSettings,
   ];
@@ -2522,9 +2964,30 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'payments',
+        limitUpdateKind: UpdateKind.insert,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payments',
         limitUpdateKind: UpdateKind.update,
       ),
       result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payment_batches',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'payment_batches',
+        limitUpdateKind: UpdateKind.update,
+      ),
+      result: [TableUpdate('payments', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -2602,6 +3065,24 @@ final class $ClientsReferences
     ).filter((f) => f.clientId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_chargesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<PaymentBatches, List<PaymentBatchRecord>>
+  _paymentBatchesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.paymentBatches,
+    aliasName: 'clients__id__payment_batches__client_id',
+  );
+
+  $PaymentBatchesProcessedTableManager get paymentBatchesRefs {
+    final manager = $PaymentBatchesTableManager(
+      $_db,
+      $_db.paymentBatches,
+    ).filter((f) => f.clientId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_paymentBatchesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -2712,6 +3193,31 @@ class $ClientsFilterComposer extends Composer<_$AppDatabase, Clients> {
           }) => $ChargesFilterComposer(
             $db: $db,
             $table: $db.charges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> paymentBatchesRefs(
+    Expression<bool> Function($PaymentBatchesFilterComposer f) f,
+  ) {
+    final $PaymentBatchesFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.paymentBatches,
+      getReferencedColumn: (t) => t.clientId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $PaymentBatchesFilterComposer(
+            $db: $db,
+            $table: $db.paymentBatches,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2882,6 +3388,31 @@ class $ClientsAnnotationComposer extends Composer<_$AppDatabase, Clients> {
     );
     return f(composer);
   }
+
+  Expression<T> paymentBatchesRefs<T extends Object>(
+    Expression<T> Function($PaymentBatchesAnnotationComposer a) f,
+  ) {
+    final $PaymentBatchesAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.paymentBatches,
+      getReferencedColumn: (t) => t.clientId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $PaymentBatchesAnnotationComposer(
+            $db: $db,
+            $table: $db.paymentBatches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $ClientsTableManager
@@ -2897,7 +3428,11 @@ class $ClientsTableManager
           $ClientsUpdateCompanionBuilder,
           (ClientRecord, $ClientsReferences),
           ClientRecord,
-          PrefetchHooks Function({bool devicesRefs, bool chargesRefs})
+          PrefetchHooks Function({
+            bool devicesRefs,
+            bool chargesRefs,
+            bool paymentBatchesRefs,
+          })
         > {
   $ClientsTableManager(_$AppDatabase db, Clients table)
     : super(
@@ -2974,50 +3509,79 @@ class $ClientsTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({devicesRefs = false, chargesRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (devicesRefs) db.devices,
-                if (chargesRefs) db.charges,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (devicesRefs)
-                    await $_getPrefetchedDataByColumns<
-                      ClientRecord,
-                      Clients,
-                      DeviceRecord,
-                      Devices
-                    >(
-                      currentTable: table,
-                      referencedTable: $ClientsReferences._devicesRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $ClientsReferences(db, table, p0).devicesRefs,
-                      currentColumn: 'id',
-                      referencedColumn: 'client_id',
-                      typedResults: items,
-                    ),
-                  if (chargesRefs)
-                    await $_getPrefetchedDataByColumns<
-                      ClientRecord,
-                      Clients,
-                      ChargeRecord,
-                      Charges
-                    >(
-                      currentTable: table,
-                      referencedTable: $ClientsReferences._chargesRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $ClientsReferences(db, table, p0).chargesRefs,
-                      currentColumn: 'id',
-                      referencedColumn: 'client_id',
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({
+                devicesRefs = false,
+                chargesRefs = false,
+                paymentBatchesRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (devicesRefs) db.devices,
+                    if (chargesRefs) db.charges,
+                    if (paymentBatchesRefs) db.paymentBatches,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (devicesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ClientRecord,
+                          Clients,
+                          DeviceRecord,
+                          Devices
+                        >(
+                          currentTable: table,
+                          referencedTable: $ClientsReferences._devicesRefsTable(
+                            db,
+                          ),
+                          managerFromTypedResult: (p0) =>
+                              $ClientsReferences(db, table, p0).devicesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'client_id',
+                          typedResults: items,
+                        ),
+                      if (chargesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ClientRecord,
+                          Clients,
+                          ChargeRecord,
+                          Charges
+                        >(
+                          currentTable: table,
+                          referencedTable: $ClientsReferences._chargesRefsTable(
+                            db,
+                          ),
+                          managerFromTypedResult: (p0) =>
+                              $ClientsReferences(db, table, p0).chargesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'client_id',
+                          typedResults: items,
+                        ),
+                      if (paymentBatchesRefs)
+                        await $_getPrefetchedDataByColumns<
+                          ClientRecord,
+                          Clients,
+                          PaymentBatchRecord,
+                          PaymentBatches
+                        >(
+                          currentTable: table,
+                          referencedTable: $ClientsReferences
+                              ._paymentBatchesRefsTable(db),
+                          managerFromTypedResult: (p0) => $ClientsReferences(
+                            db,
+                            table,
+                            p0,
+                          ).paymentBatchesRefs,
+                          currentColumn: 'id',
+                          referencedColumn: 'client_id',
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -3034,7 +3598,11 @@ typedef $ClientsProcessedTableManager =
       $ClientsUpdateCompanionBuilder,
       (ClientRecord, $ClientsReferences),
       ClientRecord,
-      PrefetchHooks Function({bool devicesRefs, bool chargesRefs})
+      PrefetchHooks Function({
+        bool devicesRefs,
+        bool chargesRefs,
+        bool paymentBatchesRefs,
+      })
     >;
 typedef $DevicesCreateCompanionBuilder = DevicesCompanion Function({
   required String id,
@@ -3806,6 +4374,409 @@ typedef $ChargesProcessedTableManager =
       ChargeRecord,
       PrefetchHooks Function({bool clientId, bool paymentsRefs})
     >;
+typedef $PaymentBatchesCreateCompanionBuilder =
+    PaymentBatchesCompanion Function({
+      required String id,
+      required String clientId,
+      required int paidAt,
+      required int totalMinor,
+      Value<int?> voidedAt,
+      Value<int> rowid,
+    });
+typedef $PaymentBatchesUpdateCompanionBuilder =
+    PaymentBatchesCompanion Function({
+      Value<String> id,
+      Value<String> clientId,
+      Value<int> paidAt,
+      Value<int> totalMinor,
+      Value<int?> voidedAt,
+      Value<int> rowid,
+    });
+
+final class $PaymentBatchesReferences
+    extends BaseReferences<_$AppDatabase, PaymentBatches, PaymentBatchRecord> {
+  $PaymentBatchesReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static Clients _clientIdTable(_$AppDatabase db) =>
+      db.clients.createAlias('payment_batches__client_id__clients__id');
+
+  $ClientsProcessedTableManager get clientId {
+    final $_column = $_itemColumn<String>('client_id')!;
+
+    final manager = $ClientsTableManager(
+      $_db,
+      $_db.clients,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_clientIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<Payments, List<PaymentRecord>> _paymentsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.payments,
+    aliasName: 'payment_batches__id__payments__batch_id',
+  );
+
+  $PaymentsProcessedTableManager get paymentsRefs {
+    final manager = $PaymentsTableManager(
+      $_db,
+      $_db.payments,
+    ).filter((f) => f.batchId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_paymentsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $PaymentBatchesFilterComposer
+    extends Composer<_$AppDatabase, PaymentBatches> {
+  $PaymentBatchesFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get paidAt => $composableBuilder(
+    column: $table.paidAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalMinor => $composableBuilder(
+    column: $table.totalMinor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get voidedAt => $composableBuilder(
+    column: $table.voidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $ClientsFilterComposer get clientId {
+    final $ClientsFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientId,
+      referencedTable: $db.clients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $ClientsFilterComposer(
+            $db: $db,
+            $table: $db.clients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> paymentsRefs(
+    Expression<bool> Function($PaymentsFilterComposer f) f,
+  ) {
+    final $PaymentsFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.payments,
+      getReferencedColumn: (t) => t.batchId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $PaymentsFilterComposer(
+            $db: $db,
+            $table: $db.payments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $PaymentBatchesOrderingComposer
+    extends Composer<_$AppDatabase, PaymentBatches> {
+  $PaymentBatchesOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get paidAt => $composableBuilder(
+    column: $table.paidAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalMinor => $composableBuilder(
+    column: $table.totalMinor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get voidedAt => $composableBuilder(
+    column: $table.voidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $ClientsOrderingComposer get clientId {
+    final $ClientsOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientId,
+      referencedTable: $db.clients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $ClientsOrderingComposer(
+            $db: $db,
+            $table: $db.clients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $PaymentBatchesAnnotationComposer
+    extends Composer<_$AppDatabase, PaymentBatches> {
+  $PaymentBatchesAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get paidAt =>
+      $composableBuilder(column: $table.paidAt, builder: (column) => column);
+
+  GeneratedColumn<int> get totalMinor => $composableBuilder(
+    column: $table.totalMinor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get voidedAt =>
+      $composableBuilder(column: $table.voidedAt, builder: (column) => column);
+
+  $ClientsAnnotationComposer get clientId {
+    final $ClientsAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.clientId,
+      referencedTable: $db.clients,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $ClientsAnnotationComposer(
+            $db: $db,
+            $table: $db.clients,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> paymentsRefs<T extends Object>(
+    Expression<T> Function($PaymentsAnnotationComposer a) f,
+  ) {
+    final $PaymentsAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.payments,
+      getReferencedColumn: (t) => t.batchId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $PaymentsAnnotationComposer(
+            $db: $db,
+            $table: $db.payments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $PaymentBatchesTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          PaymentBatches,
+          PaymentBatchRecord,
+          $PaymentBatchesFilterComposer,
+          $PaymentBatchesOrderingComposer,
+          $PaymentBatchesAnnotationComposer,
+          $PaymentBatchesCreateCompanionBuilder,
+          $PaymentBatchesUpdateCompanionBuilder,
+          (PaymentBatchRecord, $PaymentBatchesReferences),
+          PaymentBatchRecord,
+          PrefetchHooks Function({bool clientId, bool paymentsRefs})
+        > {
+  $PaymentBatchesTableManager(_$AppDatabase db, PaymentBatches table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $PaymentBatchesFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $PaymentBatchesOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $PaymentBatchesAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> clientId = const Value.absent(),
+                Value<int> paidAt = const Value.absent(),
+                Value<int> totalMinor = const Value.absent(),
+                Value<int?> voidedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PaymentBatchesCompanion(
+                id: id,
+                clientId: clientId,
+                paidAt: paidAt,
+                totalMinor: totalMinor,
+                voidedAt: voidedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String clientId,
+                required int paidAt,
+                required int totalMinor,
+                Value<int?> voidedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PaymentBatchesCompanion.insert(
+                id: id,
+                clientId: clientId,
+                paidAt: paidAt,
+                totalMinor: totalMinor,
+                voidedAt: voidedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<PaymentBatches, PaymentBatchRecord>(table),
+                  $PaymentBatchesReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({clientId = false, paymentsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (paymentsRefs) db.payments],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (clientId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.clientId,
+                        referencedTable: $PaymentBatchesReferences
+                            ._clientIdTable(db),
+                        referencedColumn: $PaymentBatchesReferences
+                            ._clientIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (paymentsRefs)
+                    await $_getPrefetchedDataByColumns<
+                      PaymentBatchRecord,
+                      PaymentBatches,
+                      PaymentRecord,
+                      Payments
+                    >(
+                      currentTable: table,
+                      referencedTable: $PaymentBatchesReferences
+                          ._paymentsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $PaymentBatchesReferences(db, table, p0).paymentsRefs,
+                      currentColumn: 'id',
+                      referencedColumn: 'batch_id',
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $PaymentBatchesProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      PaymentBatches,
+      PaymentBatchRecord,
+      $PaymentBatchesFilterComposer,
+      $PaymentBatchesOrderingComposer,
+      $PaymentBatchesAnnotationComposer,
+      $PaymentBatchesCreateCompanionBuilder,
+      $PaymentBatchesUpdateCompanionBuilder,
+      (PaymentBatchRecord, $PaymentBatchesReferences),
+      PaymentBatchRecord,
+      PrefetchHooks Function({bool clientId, bool paymentsRefs})
+    >;
 typedef $PaymentsCreateCompanionBuilder = PaymentsCompanion Function({
   required String id,
   required String chargeId,
@@ -3813,6 +4784,7 @@ typedef $PaymentsCreateCompanionBuilder = PaymentsCompanion Function({
   required int paidAt,
   Value<String?> note,
   Value<int?> voidedAt,
+  Value<String?> batchId,
   Value<int> rowid,
 });
 typedef $PaymentsUpdateCompanionBuilder = PaymentsCompanion Function({
@@ -3822,6 +4794,7 @@ typedef $PaymentsUpdateCompanionBuilder = PaymentsCompanion Function({
   Value<int> paidAt,
   Value<String?> note,
   Value<int?> voidedAt,
+  Value<String?> batchId,
   Value<int> rowid,
 });
 
@@ -3840,6 +4813,23 @@ final class $PaymentsReferences
       $_db.charges,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_chargeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static PaymentBatches _batchIdTable(_$AppDatabase db) =>
+      db.paymentBatches.createAlias('payments__batch_id__payment_batches__id');
+
+  $PaymentBatchesProcessedTableManager? get batchId {
+    final $_column = $_itemColumn<String>('batch_id');
+    if ($_column == null) return null;
+    final manager = $PaymentBatchesTableManager(
+      $_db,
+      $_db.paymentBatches,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_batchIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -3894,6 +4884,29 @@ class $PaymentsFilterComposer extends Composer<_$AppDatabase, Payments> {
           }) => $ChargesFilterComposer(
             $db: $db,
             $table: $db.charges,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $PaymentBatchesFilterComposer get batchId {
+    final $PaymentBatchesFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.batchId,
+      referencedTable: $db.paymentBatches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $PaymentBatchesFilterComposer(
+            $db: $db,
+            $table: $db.paymentBatches,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3959,6 +4972,29 @@ class $PaymentsOrderingComposer extends Composer<_$AppDatabase, Payments> {
     );
     return composer;
   }
+
+  $PaymentBatchesOrderingComposer get batchId {
+    final $PaymentBatchesOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.batchId,
+      referencedTable: $db.paymentBatches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $PaymentBatchesOrderingComposer(
+            $db: $db,
+            $table: $db.paymentBatches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $PaymentsAnnotationComposer extends Composer<_$AppDatabase, Payments> {
@@ -4008,6 +5044,29 @@ class $PaymentsAnnotationComposer extends Composer<_$AppDatabase, Payments> {
     );
     return composer;
   }
+
+  $PaymentBatchesAnnotationComposer get batchId {
+    final $PaymentBatchesAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.batchId,
+      referencedTable: $db.paymentBatches,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $PaymentBatchesAnnotationComposer(
+            $db: $db,
+            $table: $db.paymentBatches,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $PaymentsTableManager
@@ -4023,7 +5082,7 @@ class $PaymentsTableManager
           $PaymentsUpdateCompanionBuilder,
           (PaymentRecord, $PaymentsReferences),
           PaymentRecord,
-          PrefetchHooks Function({bool chargeId})
+          PrefetchHooks Function({bool chargeId, bool batchId})
         > {
   $PaymentsTableManager(_$AppDatabase db, Payments table)
     : super(
@@ -4044,6 +5103,7 @@ class $PaymentsTableManager
                 Value<int> paidAt = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<int?> voidedAt = const Value.absent(),
+                Value<String?> batchId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PaymentsCompanion(
                 id: id,
@@ -4052,6 +5112,7 @@ class $PaymentsTableManager
                 paidAt: paidAt,
                 note: note,
                 voidedAt: voidedAt,
+                batchId: batchId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4062,6 +5123,7 @@ class $PaymentsTableManager
                 required int paidAt,
                 Value<String?> note = const Value.absent(),
                 Value<int?> voidedAt = const Value.absent(),
+                Value<String?> batchId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PaymentsCompanion.insert(
                 id: id,
@@ -4070,6 +5132,7 @@ class $PaymentsTableManager
                 paidAt: paidAt,
                 note: note,
                 voidedAt: voidedAt,
+                batchId: batchId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4080,7 +5143,7 @@ class $PaymentsTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({chargeId = false}) {
+          prefetchHooksCallback: ({chargeId = false, batchId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -4110,6 +5173,16 @@ class $PaymentsTableManager
                             .id,
                       ) as T;
                     }
+                    if (batchId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.batchId,
+                        referencedTable: $PaymentsReferences._batchIdTable(db),
+                        referencedColumn: $PaymentsReferences
+                            ._batchIdTable(db)
+                            .id,
+                      ) as T;
+                    }
 
                     return state;
                   },
@@ -4134,7 +5207,7 @@ typedef $PaymentsProcessedTableManager =
       $PaymentsUpdateCompanionBuilder,
       (PaymentRecord, $PaymentsReferences),
       PaymentRecord,
-      PrefetchHooks Function({bool chargeId})
+      PrefetchHooks Function({bool chargeId, bool batchId})
     >;
 typedef $AppSettingsCreateCompanionBuilder = AppSettingsCompanion Function({
   Value<int> id,
@@ -4372,6 +5445,8 @@ class $AppDatabaseManager {
   $ClientsTableManager get clients => $ClientsTableManager(_db, _db.clients);
   $DevicesTableManager get devices => $DevicesTableManager(_db, _db.devices);
   $ChargesTableManager get charges => $ChargesTableManager(_db, _db.charges);
+  $PaymentBatchesTableManager get paymentBatches =>
+      $PaymentBatchesTableManager(_db, _db.paymentBatches);
   $PaymentsTableManager get payments =>
       $PaymentsTableManager(_db, _db.payments);
   $AppSettingsTableManager get appSettings =>

@@ -55,17 +55,44 @@ CREATE TABLE charges (
 CREATE INDEX charges_period ON charges(period_key);
 CREATE INDEX charges_candidate_date ON charges(suspension_candidate_date);
 
+CREATE TABLE payment_batches (
+  id TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0),
+  client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+  paid_at INTEGER NOT NULL,
+  total_minor INTEGER NOT NULL CHECK (typeof(total_minor) = 'integer' AND total_minor >= 0),
+  voided_at INTEGER
+) AS PaymentBatchRecord;
+
+CREATE INDEX payment_batches_client ON payment_batches(client_id, paid_at);
+
 CREATE TABLE payments (
   id TEXT NOT NULL PRIMARY KEY CHECK (length(trim(id)) > 0),
   charge_id TEXT NOT NULL REFERENCES charges(id) ON DELETE RESTRICT,
   amount_minor INTEGER NOT NULL CHECK (typeof(amount_minor) = 'integer' AND amount_minor >= 0),
   paid_at INTEGER NOT NULL,
   note TEXT,
-  voided_at INTEGER
+  voided_at INTEGER,
+  batch_id TEXT REFERENCES payment_batches(id) ON DELETE RESTRICT
 ) AS PaymentRecord;
 
 CREATE INDEX payments_charge ON payments(charge_id);
 CREATE UNIQUE INDEX payments_one_active ON payments(charge_id) WHERE voided_at IS NULL;
+CREATE UNIQUE INDEX payments_batch_charge ON payments(batch_id, charge_id);
+
+CREATE TRIGGER payments_match_batch BEFORE INSERT ON payments
+WHEN NEW.batch_id IS NOT NULL AND (
+  NOT EXISTS (
+    SELECT 1 FROM payment_batches b JOIN charges c ON c.client_id = b.client_id
+    WHERE b.id = NEW.batch_id AND c.id = NEW.charge_id AND b.paid_at = NEW.paid_at
+      AND (b.voided_at IS NULL OR NEW.voided_at IS NOT NULL)
+      AND NEW.amount_minor <= b.total_minor - (
+        SELECT COALESCE(SUM(amount_minor), 0) FROM payments WHERE batch_id = b.id
+      )
+  ) OR (SELECT COUNT(*) FROM payments WHERE batch_id = NEW.batch_id) >= 12
+)
+BEGIN
+  SELECT RAISE(ABORT, 'El pago no corresponde al grupo.');
+END;
 
 -- Full payments are also enforced when bypassing the Dart services.
 CREATE TRIGGER payments_exact_amount BEFORE INSERT ON payments
@@ -79,9 +106,25 @@ END;
 CREATE TRIGGER payments_immutable BEFORE UPDATE ON payments
 WHEN NEW.id IS NOT OLD.id OR NEW.charge_id IS NOT OLD.charge_id
   OR NEW.amount_minor IS NOT OLD.amount_minor OR NEW.paid_at IS NOT OLD.paid_at
-  OR NEW.note IS NOT OLD.note OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL
+  OR NEW.note IS NOT OLD.note OR NEW.batch_id IS NOT OLD.batch_id
+  OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL
 BEGIN
   SELECT RAISE(ABORT, 'El pago histórico solo puede anularse una vez.');
+END;
+
+CREATE TRIGGER payment_batches_immutable BEFORE UPDATE ON payment_batches
+WHEN NEW.id IS NOT OLD.id OR NEW.client_id IS NOT OLD.client_id
+  OR NEW.paid_at IS NOT OLD.paid_at OR NEW.total_minor IS NOT OLD.total_minor
+  OR OLD.voided_at IS NOT NULL OR NEW.voided_at IS NULL
+  OR (SELECT COUNT(*) FROM payments WHERE batch_id = OLD.id) NOT BETWEEN 2 AND 12
+  OR NOT EXISTS (SELECT 1 FROM payments WHERE batch_id = OLD.id AND voided_at IS NULL)
+BEGIN
+  SELECT RAISE(ABORT, 'El grupo completo solo puede anularse una vez.');
+END;
+
+CREATE TRIGGER payment_batches_void_children AFTER UPDATE OF voided_at ON payment_batches
+BEGIN
+  UPDATE payments SET voided_at = NEW.voided_at WHERE batch_id = NEW.id AND voided_at IS NULL;
 END;
 
 -- Preserve identity for all payment history and the amount of actively paid charges.

@@ -73,7 +73,7 @@ void main() {
         (await db.customSelect('PRAGMA user_version').getSingle()).read<int>(
           'user_version',
         ),
-        3,
+        5,
       );
       await expectLater(
         db.customStatement('INSERT INTO app_settings(id) VALUES (2)'),

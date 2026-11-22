@@ -106,37 +106,48 @@ class BillingService {
     BillingPeriod last,
     int timestamp,
   ) async {
-    var period = BillingPeriod.parse(client.billingStartPeriod);
-    if (period.compareTo(last) > 0) return 0;
     final existing = await (db.select(
       db.charges,
     )..where((row) => row.clientId.equals(client.id))).get();
     final existingPeriods = existing.map((charge) => charge.periodKey).toSet();
-    var inserted = 0;
+    final missing = missingCharges(client, last, existingPeriods, timestamp);
+    for (final charge in missing) {
+      await db.into(db.charges).insert(charge);
+    }
+    return missing.length;
+  }
+
+  List<ChargeRecord> missingCharges(
+    ClientRecord client,
+    BillingPeriod last,
+    Set<String> existingPeriods,
+    int timestamp,
+  ) {
+    var period = BillingPeriod.parse(client.billingStartPeriod);
+    final missing = <ChargeRecord>[];
     while (period.compareTo(last) <= 0) {
       if (!existingPeriods.contains(period.key)) {
-        // No insert-or-ignore: unrelated SQL errors must roll back the transaction.
-        await db
-            .into(db.charges)
-            .insert(
-              ChargesCompanion.insert(
-                id: '${client.id}:${period.key}',
-                clientId: client.id,
-                periodKey: period.key,
-                collectionDate: period.collectionDate.toString(),
-                suspensionCandidateDate: period.suspensionCandidateDate
-                    .toString(),
-                amountMinor: client.monthlyFeeMinor,
-                createdAt: timestamp,
-              ),
-            );
-        inserted++;
+        missing.add(plannedCharge(client, period, timestamp));
       }
       if (period == last) break;
       period = period.next;
     }
-    return inserted;
+    return missing;
   }
+
+  ChargeRecord plannedCharge(
+    ClientRecord client,
+    BillingPeriod period,
+    int timestamp,
+  ) => ChargeRecord(
+    id: '${client.id}:${period.key}',
+    clientId: client.id,
+    periodKey: period.key,
+    collectionDate: period.collectionDate.toString(),
+    suspensionCandidateDate: period.suspensionCandidateDate.toString(),
+    amountMinor: client.monthlyFeeMinor,
+    createdAt: timestamp,
+  );
 
   Future<List<ChargeWithStatus>> chargesForPeriod(
     BillingPeriod period, {

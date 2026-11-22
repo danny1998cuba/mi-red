@@ -12,7 +12,7 @@ class AppDatabase extends _$AppDatabase {
   Future<void> close() => _closing ??= super.close();
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
       await into(appSettings).insert(const AppSettingsCompanion(id: Value(1)));
     }),
     onUpgrade: (migrator, from, to) async {
-      if (from < 1 || from > 2 || to != 3) {
+      if (from < 1 || from > 4 || to != 5) {
         throw StateError('Falta una migración de la versión $from a $to.');
       }
       await customStatement('PRAGMA foreign_keys = OFF');
@@ -30,9 +30,32 @@ class AppDatabase extends _$AppDatabase {
           if (from == 1) {
             await migrator.addColumn(devices, devices.ipAddress);
           }
-          // No inbound foreign keys reference devices. Preserve all rows and
-          // indices while removing the closed type allowlist.
-          await migrator.alterTable(TableMigration(devices));
+          if (from < 3) {
+            await migrator.alterTable(TableMigration(devices));
+          }
+          if (from < 4) {
+            await migrator.createTable(paymentBatches);
+            await migrator.addColumn(payments, payments.batchId);
+          }
+          const triggers = {
+            'payments_match_batch',
+            'payments_immutable',
+            'payment_batches_immutable',
+            'payment_batches_void_children',
+          };
+          for (final name in triggers) {
+            await customStatement('DROP TRIGGER IF EXISTS $name');
+          }
+          for (final entity in allSchemaEntities) {
+            if (triggers.contains(entity.entityName) ||
+                (from < 4 &&
+                    const {
+                      'payment_batches_client',
+                      'payments_batch_charge',
+                    }.contains(entity.entityName))) {
+              await migrator.create(entity);
+            }
+          }
           if ((await customSelect(
             'PRAGMA foreign_key_check',
           ).get()).isNotEmpty) {

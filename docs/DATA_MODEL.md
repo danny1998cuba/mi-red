@@ -2,7 +2,7 @@
 
 El modelo documenta invariantes, no obliga a un nombre exacto de clase Dart. Elegir UUID (TEXT) o identificadores estables; todas las referencias deben tener FK e índices adecuados.
 
-En los esquemas v1, v2 y v3, todos los instantes de auditoría se almacenan como INTEGER de milisegundos desde Unix epoch. Las fechas de calendario son TEXT `YYYY-MM-DD` locales y se calculan de forma independiente de esos instantes. La versión actual es v3 (tipo de dispositivo libre); v1 fue la primera versión persistida y no se descarta.
+Los instantes de auditoría se almacenan como INTEGER de milisegundos desde Unix epoch. Las fechas de calendario son TEXT `YYYY-MM-DD` locales y se calculan de forma independiente de esos instantes. SQLite v5 permite grupos de 2 a 12 miembros y anulaciones por miembro. La app conserva las rutas de migración desde v1 a v4.
 
 ## `clients`
 - `id` TEXT PK
@@ -45,6 +45,13 @@ En los esquemas v1, v2 y v3, todos los instantes de auditoría se almacenan como
 - `note` TEXT NULL
 - `voided_at` NULL; si NO NULL el pago fue anulado, conservar auditoría
 - Índice sobre `charge_id`, restringir a un solo pago activo por cargo (índice único parcial o validación transaccional).
+- `batch_id` TEXT NULL, FK a `payment_batches`. Los pagos individuales tienen NULL. El índice único `(batch_id, charge_id)` impide duplicar un cargo en un grupo.
+
+## `payment_batches` (v4)
+- `id` TEXT PK. La confirmación usa el ID de la previsualización para impedir repetir la misma operación.
+- `client_id` TEXT NOT NULL FK a `clients`, con índice por cliente y fecha.
+- `paid_at` INTEGER, coincide con la fecha original de todos los hijos. `voided_at` nullable registra una anulación conjunta. El trigger actualiza únicamente miembros todavía vigentes. Un grupo puede quedar totalmente anulado mediante acciones individuales y tener ese campo NULL. Su estado se deriva de cuántos hijos conservan `payments.voided_at` NULL.
+- `total_minor` INTEGER NOT NULL, suma original de 2 a 12 pagos de cargos distintos del mismo cliente. El vigente suma hijos activos y el anulado es la diferencia. Los resúmenes por período solo usan pagos vigentes por cargo.
 
 ## `app_settings`
 - Registro singleton `id=1`
@@ -68,9 +75,11 @@ En los esquemas v1, v2 y v3, todos los instantes de auditoría se almacenan como
 - Conservar `drift_schemas/drift_schema_v1.json` y `drift_schema_v2.json`; utilidades Drift de prueba en `test/generated_migrations/`. Véase `../T03_2_IP_DEVICES.md` para evidencia con registros v1, pagos/anulaciones y reaperturas.
 - Schema version incremental usando migraciones Drift, no `drop-and-recreate` en releases.
 - El archivo de backup tiene versión propia, separada del schema SQLite; validar antes de importar.
-- T07: `.miredbk` formato 1 admite las cinco tablas de esquemas 2 y 3, con columnas SQL explícitas e instantes INTEGER de milisegundos, sin convertirlos a texto o alterar sus valores. Incluye todas las IP y `notifications_enabled`; no incluye permisos ni cachés del SO. Esquema 2 exige los cuatro tipos históricos; esquema 3 admite texto obligatorio libre. Nuevas exportaciones declaran esquema 3; las importaciones conservan exactamente las filas del esquema 2. Formatos/esquemas anteriores sin IP y versiones futuras se rechazan, ya que no hubo respaldos implementados antes de T07. La autenticidad AES-GCM y la validación completa preceden al reemplazo transaccional.
+- T07 estableció `.miredbk` formato 1. Las copias históricas de esquemas 2 y 3 contienen cinco tablas con las columnas SQL explícitas y los instantes como INTEGER en milisegundos. Incluyen IP y `notifications_enabled`. El esquema 2 exige los cuatro tipos de dispositivo históricos y el 3 admite texto libre. La autenticidad AES-GCM y la validación completa preceden al reemplazo transaccional. Se rechazan copias sin IP y versiones desconocidas.
 - Exportar un snapshot consistente (transacción de lectura o mecanismo equivalente), NO copiar un archivo SQLite abierto ignorando WAL.
 - Al restaurar, validar todo el payload antes del reemplazo y aplicar en una sola transacción; no borrar datos actuales al fallar.
 - El contexto histórico de T03.2 no incluía respaldos. T07 conserva `devices.ip_address`, incluyendo NULL, sin modificar schemaVersion ni la migración v1→v2. La conciliación y los permisos reales se aplican separadamente después de restaurar.
 
 - Cambio posterior a Fase C: v1/v2 → v3 en una transacción. Desde v1 se añade primero IP; se reconstruye únicamente devices con TableMigration para retirar el CHECK del catálogo, conservando columnas, valores e índices. FK se desactivan fuera de la transacción para la reconstrucción y se reactivan en finally; foreign_key_check se verifica antes del commit. No hay conversión de tipos ni cambios financieros. Las instantáneas v1/v2 se conservan y se añade v3. Las apps antiguas rechazan copias nuevas de esquema 3; no se garantiza downgrade.
+- T09 añade `payment_batches`, la columna nullable `payments.batch_id`, dos índices y los triggers de integridad/anulación. La migración v3→v4 es aditiva y los pasos anteriores se ejecutan solo desde v1/v2. El payload de esquema 4 incorpora los grupos al formato cifrado 1. Para restaurar esquema 2/3 se usa una tabla de grupos vacía y vínculos NULL. Las apps anteriores requieren su propio esquema de copia.
+- T09.1 reemplaza cuatro triggers en v4→v5, sin alterar tablas, columnas, índices o filas de v4. Mantiene inmutable el pago original y permite anular miembros individualmente. El formato cifrado 1 de esquema 5 verifica cardinalidad, pertenencia, suma y auditoría de anulaciones antes de restaurar. Sigue leyendo esquemas 2 a 4.
